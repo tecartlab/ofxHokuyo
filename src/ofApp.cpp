@@ -42,139 +42,126 @@ void ofApp::update()
 {
     if(mTCPClient.isConnected() == true)
     {
+        // the lidar sends its data in packages not larger than 65 bytes
         string message = mTCPClient.receive();
         
-        if(message.length() > 0)
-        {
+        mLeftOverMessage = "";
+        
+        // if there is a new package
+        while(message.length() > 0){
+            // only go parsing messages if we expect them
             if(mDecodeMessage == true){
                 if(mReceiveMessage.length() == 0 && message.length() > 60){
+                    // the first package has to be larger than 60 -
+                    // this assumes that all other non-data packages
+                    // sent by the lidar are never bigger than 60 bytes
                     mReceiveMessage = message;
                 } else if(mReceiveMessage.length() > 0){
+                    // keep going if there was a previous package
                     mReceiveMessage = message;
                 }
             } else {
+                std::cout << "received " << message << "\n";
+            }
+            
+            message = "";
+            
+            if(mDecodeMessage == true && mReceiveMessage.length() > 0)
+            {
+                mReceiveMessage = mLeftOverMessage + mReceiveMessage;
+                
+                char h30 = '0';
+                
                 std::cout << "received " << mReceiveMessage << "\n";
+                std::cout << "received length " << mReceiveMessage.length() << "\n";
+                
+                unsigned int i;
+                
+                for( i = 0; (i * 3 + 3) < mReceiveMessage.length() ;i++ ){
+                    std::cout << "value id " << lidarRangeIndex;
+                    char val1 = mReceiveMessage[(i * 3)];
+                    char val2 = mReceiveMessage[(i * 3) + 1];
+                    char val3 = mReceiveMessage[(i * 3) + 2];
+                    //std::cout << "| val1 " << val1;
+                    //std::cout << "| val2 " << val2;
+                    //std::cout << "| val3 " << val3;
+                    
+                    int val1h = val1 - h30;
+                    int val2h = val2 - h30;
+                    int val3h = val3 - h30;
+                    
+                    //std::cout << "| val1h " << val1h;
+                    //std::cout << "| val2h " << val2h;
+                    //std::cout << "| val3h " << val3h;
+                    
+                    int final = (val1h << 12) + (val2h << 6) + val3h;
+                    std::cout << " | " << final << "\n";
+                    lidarRange[lidarRangeIndex++] = final;
+                }
+                
+                mLeftOverMessage = "";
+                
+                // get all leftover bytes except the last one from the package
+                for(i = i * 3 ; i < mReceiveMessage.length() - 1; i++){
+                    mLeftOverMessage = mLeftOverMessage + mReceiveMessage[i];
+                }
+                /*
+                 if(mLeftOverMessage.length() > 0){
+                 std::cout << " >> leftover " << mLeftOverMessage << "\n";
+                 } else {
+                 std::cout << " >> no leftover " << "\n";
+                 }
+                 */
+                
+                if(lidarRangeIndex >= LIDARRANGE - 1){
+                    // if we have reached our limits, reset
+                    lidarRangeIndex = 0;
+                    mDecodeMessage = false;
+                    mReceiveMessage = "";
+                } else {
+                    // otherwise get a new package
+                    message = mTCPClient.receive();
+                }
+            } else {
+                mLeftOverMessage = "";
             }
         }
     }
     
-    if(mDecodeMessage == true && mReceiveMessage.length() > 32)
-    {
-        mReceiveMessage = mLeftOverMessage + mReceiveMessage;
-        
-        char h30 = '0';
-    
-        std::cout << "received " << mReceiveMessage << "\n";
-        std::cout << "received length " << mReceiveMessage.length() << "\n";
-        
-        unsigned int i;
-        
-        for( i = 0; (i * 3 + 3) < mReceiveMessage.length() ;i++ ){
-            std::cout << "value id " << lidarRangeIndex;
-            char val1 = mReceiveMessage[(i * 3)];
-            char val2 = mReceiveMessage[(i * 3) + 1];
-            char val3 = mReceiveMessage[(i * 3) + 2];
-            //std::cout << "| val1 " << val1;
-            //std::cout << "| val2 " << val2;
-            //std::cout << "| val3 " << val3;
-            
-            int val1h = val1 - h30;
-            int val2h = val2 - h30;
-            int val3h = val3 - h30;
-            
-            //std::cout << "| val1h " << val1h;
-            //std::cout << "| val2h " << val2h;
-            //std::cout << "| val3h " << val3h;
-            
-            int final = (val1h << 12) + (val2h << 6) + val3h;
-            std::cout << " | " << final << "\n";
-            lidarRange[lidarRangeIndex++] = final;
-        }
-        
-        mLeftOverMessage = "";
-        for(i = i * 3 ; i < mReceiveMessage.length() - 1; i++){
-            mLeftOverMessage = mLeftOverMessage + mReceiveMessage[i];
-        }
-        /*
-         if(mLeftOverMessage.length() > 0){
-         std::cout << " >> leftover " << mLeftOverMessage << "\n";
-         } else {
-         std::cout << " >> no leftover " << "\n";
-         }
-         */
-        if(lidarRangeIndex >= LIDARRANGE - 1){
-            lidarRangeIndex = 0;
-            mDecodeMessage = false;
-            mReceiveMessage = "";
-        }
-    }
-    else {
-        mLeftOverMessage = "";
-    }
-
-    //std::cout << "connected " << mTCPClient.isConnected() << "\n";
-    
-//    int recDataCount = mUDPSendConnection.PeekReceive();
-//    if(recDataCount > 0)
-//    {
-//        char udpMessage[100000];
-//        mUDPSendConnection.Receive(udpMessage,100000);
-//        string message=udpMessage;
-//        
-//        std::cout << "received " << message << "\n";
-//    }
-    
-//    int recDataCount = mUDPReceiveConnection.PeekReceive();
-//    if(recDataCount > 0)
-//    {
-//        char udpMessage[100000];
-//        mUDPReceiveConnection.Receive(udpMessage,100000);
-//        string message=udpMessage;
-//        
-//        std::cout << "received " << message << "\n";
-//    }
-    
-    
-/*
- char udpMessage[100000];
- udpConnection.Receive(udpMessage,100000);
- string message=udpMessage;
- if(message!=""){
- stroke.clear();
- float x,y;
- vector<string> strPoints = ofSplitString(message,"[/p]");
- for(unsigned int i=0;i<strPoints.size();i++){
- vector<string> point = ofSplitString(strPoints[i],"|");
- if( point.size() == 2 ){
- x=atof(point[0].c_str());
- y=atof(point[1].c_str());
- stroke.push_back(ofPoint(x,y));
- }
- }
- }
- */
-}
-
-//--------------------------------------------------------------
-void ofApp::draw(){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::keyPressed(int key)
-{
-
     mDecodeMessage = true;
     mLeftOverMessage = "";
-
+    
     //Distance acquisition ("GD")
     mSendMessage = "GD"; // retrieve distance data
     mSendMessage += "0000"; // start step: 0
     mSendMessage += "1080"; // end step: 100
     mSendMessage += "00"; // cluster count: 0
     mSendMessage += "\n";
-
+    
     mTCPClient.send(mSendMessage);
+
+}
+
+//--------------------------------------------------------------
+void ofApp::draw(){
+    
+    if(mShowGraph){
+        for(unsigned int i = 0; i < LIDARRANGE ;i++ ){
+            ofSetColor(255, 0, 255);
+            glPushMatrix();
+            glTranslatef(ofGetWidth() / 2., ofGetHeight() / 2.0, 0);
+            ofRotateDeg(0.25 * i + 225.);
+            ofDrawLine(0, 0, 0, lidarRange[i]);
+            glPopMatrix();
+        }
+    }
+
+}
+
+//--------------------------------------------------------------
+void ofApp::keyPressed(int key)
+{
+    mShowGraph = !mShowGraph;
 
     
 /*

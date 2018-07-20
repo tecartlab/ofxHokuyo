@@ -2,6 +2,7 @@
 
 #include "ofxNetwork.h"
 #include "ofMain.h"
+#include "ofxOpenCv.h"
 
 #define LIDARRANGE 1081
 
@@ -30,6 +31,8 @@ protected:
     std::string mReceiveMessage;
     std::string mLeftOverMessage;
     bool mDecodeMessage;
+
+    bool mShowGraph;
 
     int lidarRange[LIDARRANGE];
     int lidarRangeIndex;
