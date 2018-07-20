@@ -36,5 +36,11 @@ protected:
 
     int lidarRange[LIDARRANGE];
     int lidarRangeIndex;
+    
+    int frameCount;
+    
+    float lidarScale;
+    
+    float upperBorder, lowerBorder, leftBorder, rightBorder;
 
 };

@@ -4,6 +4,11 @@
 void ofApp::setup()
 {
     lidarRangeIndex = 0;
+    lidarScale = 0.1;
+    upperBorder = 1000;
+    lowerBorder = 2000;
+    leftBorder = 2000;
+    rightBorder = 2000;
     
 	ofSetVerticalSync(true);
 	ofSetFrameRate(60);
@@ -61,7 +66,7 @@ void ofApp::update()
                     mReceiveMessage = message;
                 }
             } else {
-                std::cout << "received " << message << "\n";
+                std::cout << "rx " << message << "\n";
             }
             
             message = "";
@@ -72,30 +77,18 @@ void ofApp::update()
                 
                 char h30 = '0';
                 
-                std::cout << "received " << mReceiveMessage << "\n";
-                std::cout << "received length " << mReceiveMessage.length() << "\n";
-                
                 unsigned int i;
                 
                 for( i = 0; (i * 3 + 3) < mReceiveMessage.length() ;i++ ){
-                    std::cout << "value id " << lidarRangeIndex;
                     char val1 = mReceiveMessage[(i * 3)];
                     char val2 = mReceiveMessage[(i * 3) + 1];
                     char val3 = mReceiveMessage[(i * 3) + 2];
-                    //std::cout << "| val1 " << val1;
-                    //std::cout << "| val2 " << val2;
-                    //std::cout << "| val3 " << val3;
                     
                     int val1h = val1 - h30;
                     int val2h = val2 - h30;
                     int val3h = val3 - h30;
                     
-                    //std::cout << "| val1h " << val1h;
-                    //std::cout << "| val2h " << val2h;
-                    //std::cout << "| val3h " << val3h;
-                    
                     int final = (val1h << 12) + (val2h << 6) + val3h;
-                    std::cout << " | " << final << "\n";
                     lidarRange[lidarRangeIndex++] = final;
                 }
                 
@@ -105,40 +98,40 @@ void ofApp::update()
                 for(i = i * 3 ; i < mReceiveMessage.length() - 1; i++){
                     mLeftOverMessage = mLeftOverMessage + mReceiveMessage[i];
                 }
-                /*
-                 if(mLeftOverMessage.length() > 0){
-                 std::cout << " >> leftover " << mLeftOverMessage << "\n";
-                 } else {
-                 std::cout << " >> no leftover " << "\n";
-                 }
-                 */
                 
                 if(lidarRangeIndex >= LIDARRANGE - 1){
                     // if we have reached our limits, reset
                     lidarRangeIndex = 0;
                     mDecodeMessage = false;
                     mReceiveMessage = "";
-                } else {
-                    // otherwise get a new package
-                    message = mTCPClient.receive();
-                }
+                    break;
+                } 
             } else {
                 mLeftOverMessage = "";
             }
-        }
+            message = mTCPClient.receive();
+        }//while loop
+    } else {
+        std::cout << "connection got terminated... " << "\n";
     }
-    
-    mDecodeMessage = true;
-    mLeftOverMessage = "";
-    
-    //Distance acquisition ("GD")
-    mSendMessage = "GD"; // retrieve distance data
-    mSendMessage += "0000"; // start step: 0
-    mSendMessage += "1080"; // end step: 100
-    mSendMessage += "00"; // cluster count: 0
-    mSendMessage += "\n";
-    
-    mTCPClient.send(mSendMessage);
+
+    frameCount++;
+
+    if(frameCount > 2){
+        mDecodeMessage = true;
+        mLeftOverMessage = "";
+        
+        //Distance acquisition ("GD")
+        mSendMessage = "GD"; // retrieve distance data
+        mSendMessage += "0000"; // start step: 0
+        mSendMessage += "1080"; // end step: 100
+        mSendMessage += "00"; // cluster count: 0
+        mSendMessage += "\n";
+        
+        mTCPClient.send(mSendMessage);
+        
+        frameCount = 0;
+    }
 
 }
 
@@ -146,12 +139,35 @@ void ofApp::update()
 void ofApp::draw(){
     
     if(mShowGraph){
+        ofSetColor(255, 0, 0);
+        glPushMatrix();
+        float up = ofGetHeight() / 2.0 + upperBorder * lidarScale;
+        float down = ofGetHeight() / 2.0 + lowerBorder * lidarScale;
+        float left = ofGetWidth() / 2. - leftBorder * lidarScale;
+        float right = ofGetWidth() / 2. + rightBorder * lidarScale;
+        
+        ofDrawLine(left, up, right, up);
+        ofDrawLine(left, down, right, down);
+        ofDrawLine(left, down, left, up);
+        ofDrawLine(right, down, right, up);
+        
+        glPopMatrix();
+        
+        float posX, posY;
+        
         for(unsigned int i = 0; i < LIDARRANGE ;i++ ){
             ofSetColor(255, 0, 255);
             glPushMatrix();
-            glTranslatef(ofGetWidth() / 2., ofGetHeight() / 2.0, 0);
-            ofRotateDeg(0.25 * i + 225.);
-            ofDrawLine(0, 0, 0, lidarRange[i]);
+            //glTranslatef(ofGetWidth() / 2., ofGetHeight() / 2.0, 0);
+            //ofRotateDeg(0.25 * i + 225.);
+            posX = ofGetWidth() / 2. + lidarRange[i] * lidarScale * sin(ofDegToRad(0.25 * i - 135.));
+            posY = ofGetHeight() / 2. +lidarRange[i] * lidarScale *  cos(ofDegToRad(0.25 * i + - 135.));
+            
+            if(posX < right && posX > left && posY < down && posY > up){
+                ofSetColor(0, 0, 255);
+            }
+            
+            ofDrawLine(ofGetWidth() / 2., ofGetHeight() / 2., posX, posY);
             glPopMatrix();
         }
     }
