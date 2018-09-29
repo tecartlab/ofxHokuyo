@@ -59,7 +59,7 @@ void ofApp::update()
         do
         {
             message = mTCPClient.receive();
-            
+
             if(message.find(mSendMessage.substr(0, mSendMessage.length() - 1)) == 0){
                 std::cout << "Echo detected.. " << "\n";
             }else if(message.find("00P") == 0){
@@ -68,7 +68,7 @@ void ofApp::update()
                 std::cout << "timestamp detected: " << message << "\n";
                 frameCount = 0;
             }else if(message.length() > 0){
-                std::cout << "m("<<message.length()<<"):>" << message << "<\n";
+                std::cout << "m("<< message.length() << ") -->" << message << "<--\n";
                 mReceiveMessage = mReceiveMessage + message;
                 frameCount++;
             }else{
@@ -114,56 +114,6 @@ void ofApp::update()
         }
 
         if(mDecodeMessage){
-            message = mTCPClient.receive();
-            if(waitForEcho){
-                if(message.length() > 0){
-                    std::cout << "waitForEcho message " << message << "\n";
-                    waitForEcho = false;
-                }
-            }else if(waitForTimeStamp){
-                if(message.length() > 0){
-                    std::cout << "waitForTimeStamp message " << message << "\n";
-                    waitForTimeStamp = false;
-                }
-            } else{
-                int dataIndex = 0;
-                int value = 0;
-                int readingIndex = 0;
-                int lineIndex = 0;
-                string readingData;
-                int bytesInReading = 3; //SCIP2.0 models reply with 3byte readings; 1.0 use 2 bytes
-                
-                // read all data coming back until we don’t get anymore
-                do {
-                    if (message.length() < 0)
-                        break;
-                    
-                    // Grab the readings from the reply, remove the checksum byte
-                    readingData = message.substr(0, message.length() - 1);
-                    
-                    // look for Line feed to get next line in the reading
-                    while (readingData[lineIndex] != '\0') {
-                        
-                        // Decode the byte and accumulate
-                        value <<= 6;
-                        value &=~0x3f;
-                        value |= readingData[lineIndex] - 0x30;
-                        ++ lineIndex;
-                        
-                        readingIndex = (readingIndex+1)% bytesInReading;
-                        
-                        //if this if the final byte of a distance reading, store it into an array of distances
-                        if (readingIndex == 0 && dataIndex < 1) {
-                            lidarRange[dataIndex++] = (float) value / 1000.0f;
-                            value = 0;
-                        } // end decode while
-                    } // end readline if
-                    message = mTCPClient.receive();
-                } while (message.length() > 0); // end read data while
-                
-                /*
-                // the lidar sends its data in packages not larger than 65 bytes
-                
                 mLeftOverMessage = "";
                 
                 int zeroCounter = 2;
@@ -300,7 +250,7 @@ void ofApp::keyPressed(int key)
     //Distance acquisition ("GD")
     mSendMessage = "GD"; // retrieve distance data
     mSendMessage += "0000"; // start step: 0
-    mSendMessage += "1080"; // end step: 100
+    mSendMessage += "0600"; // end step: 100
     mSendMessage += "00"; // cluster count: 0
     mSendMessage += "\n";
     
