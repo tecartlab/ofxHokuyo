@@ -32,7 +32,7 @@ protected:
     std::string mLeftOverMessage;
     bool mDecodeMessage;
 
-    bool mShowGraph;
+    bool mShowGraph, waitForEcho, waitForTimeStamp;
 
     int lidarRange[LIDARRANGE];
     int lidarRangeIndex;

@@ -11,15 +11,18 @@
 namespace dab
 {
 
-    class Lidar : public ofThread
+    class ofxHokuyo : public ofThread
 {
 public:
-    Lidar();
-    ~Lidar();
+    ofxHokuyo();
+    ~ofxHokuyo();
     
     void setup();
     void startSensing();
     void stopSensing();
+    
+    void update();
+    void draw();
     
 protected:
     std::string mIP = "192.168.0.10";
