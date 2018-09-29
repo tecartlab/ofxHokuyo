@@ -4,7 +4,7 @@
 void ofApp::setup()
 {
     lidarRangeIndex = 0;
-    lidarScale = 0.001;
+    lidarScale = 0.1;
     upperBorder = 1000;
     lowerBorder = 2000;
     leftBorder = 2000;
@@ -13,9 +13,11 @@ void ofApp::setup()
 	ofSetVerticalSync(true);
 	ofSetFrameRate(60);
     mDecodeMessage = false;
+	mShowGraph = true;
     
     mLeftOverMessage = "";
-    
+	mReceiveMessage = "initialValue";
+
     mTCPClient.setup("192.168.0.11", 10940);
     mTCPClient.setMessageDelimiter("\n");
     
@@ -23,7 +25,7 @@ void ofApp::setup()
     while(mTCPClient.isConnected() == false)
     {
         std::cout << ".";
-        usleep(1000000);
+        ofSleepMillis(10);
     }
     std::cout << "\nconnected\n";
     
@@ -61,132 +63,66 @@ void ofApp::update()
             message = mTCPClient.receive();
 
             if(message.find(mSendMessage.substr(0, mSendMessage.length() - 1)) == 0){
-                std::cout << "Echo detected.. " << "\n";
+                //std::cout << "Echo detected.. " << "\n";
+				//for some strange reason the device is only sending the last few packages once the next GD command was received. 
+				// it turns out that when the GD echo is received, all packages have arrived and parsing can get started...
+
+				if (mReceiveMessage.length() > 0 && frameCount > 0) {
+					//std::cout << "complete message (" << mReceiveMessage.length() << ")" << "\n";
+					//std::cout << "frameCount (" << frameCount << ")" << "\n";
+
+					char h30 = '0';
+
+					unsigned int i;
+					lidarRangeIndex = 0;
+
+					for (i = 0; i < LIDARRANGE; i++) {
+						char val1 = mReceiveMessage[(i * 3)];
+						char val2 = mReceiveMessage[(i * 3) + 1];
+						char val3 = mReceiveMessage[(i * 3) + 2];
+
+						int val1h = val1 - h30;
+						int val2h = val2 - h30;
+						int val3h = val3 - h30;
+
+						int final = (val1h << 12) + (val2h << 6) + val3h;
+
+						lidarRange[i] = final;
+					}
+					//....
+
+					mReceiveMessage = "";
+					frameCount = 0;
+				}
             }else if(message.find("00P") == 0){
-                std::cout << "empty detected.. " << "\n";
+                //std::cout << "empty detected.. " << "\n";
             }else if(message.length() == 5){
-                std::cout << "timestamp detected: " << message << "\n";
+                //std::cout << "timestamp detected: " << message << "\n";
                 frameCount = 0;
             }else if(message.length() > 0){
-                std::cout << "m("<< message.length() << ") -->" << message << "<--\n";
-                mReceiveMessage = mReceiveMessage + message;
+				mReceiveMessage = mReceiveMessage + message.substr(0, message.length() - 1);
+                //std::cout << "m("<< message.length() << ") -->" << message << "<--\n";
                 frameCount++;
             }else{
-                std::cout << "empty...\n";
+                //std::cout << "empty...\n";
             }
         }
         while (message.length() > 0);
-        
-        if(mReceiveMessage.length() > 0){
-            std::cout << "complete message ("<<mReceiveMessage.length()<<")" << "\n";
-            std::cout << "frameCount ("<<frameCount<<")" << "\n";
-            //frameCount = 0;
-        }
-        
-        /*
-         
-        frameCount++;
-        string message = "";
-        
-        if(!mDecodeMessage || frameCount > 10){
-            mDecodeMessage = true;
-            mLeftOverMessage = "";
+  
+		if (mReceiveMessage.length() > 0) {
+			std::cout << "send GD..." << "\n";
 
-            std::cout << "last range " << lidarRangeIndex << "\n";
+			//Distance acquisition ("GD")
+			mSendMessage = "GD"; // retrieve distance data
+			mSendMessage += "0000"; // start step: 0
+			mSendMessage += "1080"; // end step: 100
+			mSendMessage += "00"; // cluster count: 0
+			mSendMessage += "\n";
 
-            lidarRangeIndex = 0;
+			mTCPClient.send(mSendMessage);
+		}
 
-            std::cout << "distance acquisition " << "\n";
-
-            //Distance acquisition ("GD")
-            mSendMessage = "GD"; // retrieve distance data
-            mSendMessage += "0000"; // start step: 0
-            mSendMessage += "1080"; // end step: 100
-            mSendMessage += "00"; // cluster count: 0
-            mSendMessage += "\n";
-            
-            mTCPClient.send(mSendMessage);
-            
-            waitForEcho = true;
-            waitForTimeStamp = true;
-
-            frameCount = 0;
-        }
-
-        if(mDecodeMessage){
-                mLeftOverMessage = "";
-                
-                int zeroCounter = 2;
-                // if there is a new package
-                while(message.length() > 0){
-                    // only go parsing messages if we expect them
-                    if(mDecodeMessage == true){
-                        if(mReceiveMessage.length() == 0 && message.length() > 60){
-                            // the first package has to be larger than 60 -
-                            // this assumes that all other non-data packages
-                            // sent by the lidar are never bigger than 60 bytes
-                            mReceiveMessage = message;
-                        } else if(mReceiveMessage.length() > 0){
-                            // keep going if there was a previous package
-                            mReceiveMessage = message;
-                        }
-                    } else {
-                        std::cout << "rx " << message << "\n";
-                    }
-                    
-                    message = "";
-                    
-                    if(mDecodeMessage == true && mReceiveMessage.length() > 0)
-                    {
-                        mReceiveMessage = mLeftOverMessage + mReceiveMessage;
-                        
-                        char h30 = '0';
-                        
-                        unsigned int i;
-                        
-                        for( i = 0; (i * 3 + 3) < mReceiveMessage.length() ;i++ ){
-                            char val1 = mReceiveMessage[(i * 3)];
-                            char val2 = mReceiveMessage[(i * 3) + 1];
-                            char val3 = mReceiveMessage[(i * 3) + 2];
-                            
-                            int val1h = val1 - h30;
-                            int val2h = val2 - h30;
-                            int val3h = val3 - h30;
-                            
-                            int final = (val1h << 12) + (val2h << 6) + val3h;
-                            
-                            if( final == 0 && zeroCounter != 0 ){
-                                zeroCounter--;
-                            }
-                            if(zeroCounter == 0){
-                                lidarRange[lidarRangeIndex++] = final;
-                            }
-                        }
-                        
-                        mLeftOverMessage = "";
-                        
-                        // get all leftover bytes except the last one from the package
-                        for(i = i * 3 ; i < mReceiveMessage.length() - 1; i++){
-                            mLeftOverMessage = mLeftOverMessage + mReceiveMessage[i];
-                        }
-                        
-                        if(lidarRangeIndex >= LIDARRANGE - 1){
-                            // if we have reached our limits, reset
-                            std::cout << "..reached range acquisition " << "\n";
-                            mDecodeMessage = false;
-                            mReceiveMessage = "";
-                            break;
-                        }
-                    } else {
-                        mLeftOverMessage = "";
-                    }
-                    message = mTCPClient.receive();
-                }//while loop
-         
-            }
-        }
-        */
-
+ 
     } else {
         std::cout << "connection got terminated... " << "\n";
     }
@@ -220,20 +156,9 @@ void ofApp::draw(){
             posX = ofGetWidth() / 2. + lidarRange[i] * lidarScale * sin(ofDegToRad(0.25 * i - 135.));
             posY = ofGetHeight() / 2. +lidarRange[i] * lidarScale *  cos(ofDegToRad(0.25 * i - 135.));
 
-            //81 =0
-            if(i == 500){
-                std::cout << "lidar raw value: " << lidarRange[i] << "\n";
-            }
-            if(499 <= i && i <= 501){
-                ofSetColor(0, 0, 0);
-            }
-            
-            if(lidarRange[i] == 0){
-                //std::cout << "lidar index is zero: " << i << "\n";
-            }
-
             if(posX < right && posX > left && posY < down && posY > up){
-            }
+				ofSetColor(0, 0, 0);
+			}
 
             ofDrawLine(ofGetWidth() / 2., ofGetHeight() / 2., posX, posY);
             glPopMatrix();
@@ -245,18 +170,8 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)
 {
-    //mShowGraph = !mShowGraph;
+    mShowGraph = !mShowGraph;
 
-    //Distance acquisition ("GD")
-    mSendMessage = "GD"; // retrieve distance data
-    mSendMessage += "0000"; // start step: 0
-    mSendMessage += "0600"; // end step: 100
-    mSendMessage += "00"; // cluster count: 0
-    mSendMessage += "\n";
-    
-    mTCPClient.send(mSendMessage);
-
-    
 /*
  string message="";
  for(unsigned int i=0; i<stroke.size(); i++){
