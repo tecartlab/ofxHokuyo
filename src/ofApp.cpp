@@ -95,9 +95,23 @@ void ofApp::update()
 					frameCount = 0;
 				}
             }else if(message.find("00P") == 0){
+				// toss this
                 //std::cout << "empty detected.. " << "\n";
             }else if(message.length() == 5){
                 //std::cout << "timestamp detected: " << message << "\n";
+				char val1 = message[0];
+				char val2 = message[1];
+				char val3 = message[2];
+
+				char h30 = '0';
+
+				int val1h = val1 - h30;
+				int val2h = val2 - h30;
+				int val3h = val3 - h30;
+
+				int final = (val1h << 12) + (val2h << 6) + val3h;
+				std::cout << " timestamp -->" << final << "<--\n";
+
                 frameCount = 0;
             }else if(message.length() > 0){
 				mReceiveMessage = mReceiveMessage + message.substr(0, message.length() - 1);
