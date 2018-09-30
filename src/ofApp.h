@@ -3,6 +3,7 @@
 #include "ofxNetwork.h"
 #include "ofMain.h"
 #include "ofxOpenCv.h"
+#include "ofxHokuyo.h"
 
 #define LIDARRANGE 1081
 
@@ -26,19 +27,11 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
 protected:
-    ofxTCPClient mTCPClient;
-    std::string mSendMessage;
-    std::string mReceiveMessage;
-    std::string mLeftOverMessage;
-    bool mDecodeMessage;
+ 
+	lidar::ofxHokuyo lidarOne;
 
-    bool mShowGraph, waitForEcho, waitForTimeStamp;
+    bool mShowGraph;
 
-    int lidarRange[LIDARRANGE];
-    int lidarRangeIndex;
-    
-    int frameCount;
-    
     float lidarScale;
     
     float upperBorder, lowerBorder, leftBorder, rightBorder;

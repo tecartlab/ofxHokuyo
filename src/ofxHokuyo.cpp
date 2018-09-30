@@ -8,6 +8,17 @@
 
 #include "ofxHokuyo.h"
 
+lidar::ofxHokuyo::ofxHokuyo()
+{
+}
+
+lidar::ofxHokuyo::~ofxHokuyo()
+{
+	if (mTCPClient.isConnected()) {
+		mTCPClient.close();
+	}
+}
+
 void lidar::ofxHokuyo::setup(std::string ip, int port)
 {
 	std::string mIP = ip;
@@ -16,6 +27,9 @@ void lidar::ofxHokuyo::setup(std::string ip, int port)
 	lidarScale = 0.1;
 
 	mReceiveMessage = "initialValue";
+
+	mScanRaw.resize(LIDARRANGE,0);
+	mScanEuclidean.resize(LIDARRANGE, glm::vec2());
 
 	mTCPClient.setup(mIP, mPort);
 	mTCPClient.setMessageDelimiter("\n");
@@ -43,50 +57,6 @@ void lidar::ofxHokuyo::setup(std::string ip, int port)
 	} while (message.length() > 0);
 }
 
-bool lidar::ofxHokuyo::startSensing()
-{
-	if (mTCPClient.isConnected()) {
-		std::cout << "\nstart sensor...\n";
-
-		// measurement start ("BM");
-		mSendMessage = "BM\n";
-		mTCPClient.send(mSendMessage);
-
-		string message = "";
-		do {
-			message = mTCPClient.receive();
-			std::cout << message << "\n";
-		} while (message.find("BM") != 0);
-
-		std::cout << "\n...started\n";
-
-		return true;
-	}
-	return false;
-}
-
-bool lidar::ofxHokuyo::stopSensing()
-{
-	if (mTCPClient.isConnected()) {
-		std::cout << "\nstop sensor...\n";
-
-		// measurement start ("BM");
-		mSendMessage = "QT\n";
-		mTCPClient.send(mSendMessage);
-
-		string message = "";
-		do {
-			message = mTCPClient.receive();
-			std::cout << message << "\n";
-		} while (message.find("QT") != 0);
-
-		std::cout << "\n...stopped\n";
-
-		return true;
-	}
-	return false;
-}
-
 bool lidar::ofxHokuyo::update()
 {
 	if (mTCPClient.isConnected() == true)
@@ -97,8 +67,8 @@ bool lidar::ofxHokuyo::update()
 		{
 			message = mTCPClient.receive();
 
-			if (message.find(mSendMessage.substr(0, mSendMessage.length() - 1)) == 0) {
-				//std::cout << "Echo detected.. " << "\n";
+			if (message.find("GD") == 0) {
+				//std::cout << "Grab Data Echo detected.. " << "\n";
 				//for some strange reason the device is only sending the last few packages once the next GD command was received. 
 				// it turns out that when the GD echo is received, all packages have arrived and parsing can get started...
 
@@ -147,8 +117,8 @@ bool lidar::ofxHokuyo::update()
 				int val2h = val2 - h30;
 				int val3h = val3 - h30;
 
-				int final = (val1h << 12) + (val2h << 6) + val3h;
-				std::cout << " timestamp -->" << final << "<--\n";
+				mScanTimeStamp = (val1h << 12) + (val2h << 6) + val3h;
+				//std::cout << " timestamp -->" << final << "<--\n";
 
 				frameCount = 0;
 			}
@@ -167,7 +137,7 @@ bool lidar::ofxHokuyo::update()
 			// BE AWARE: At this point not all data of the last frame has been received,
 			//           only after receiving the echo of the following call can we be
 			//           sure all the data has been received
-			std::cout << "send GD..." << "\n";
+			//std::cout << "send GD..." << "\n";
 
 			//Distance acquisition ("GD")
 			mSendMessage = "GD"; // retrieve distance data
@@ -178,11 +148,82 @@ bool lidar::ofxHokuyo::update()
 
 			mTCPClient.send(mSendMessage);
 		}
-
-
 	}
 	else {
 		std::cout << "connection got terminated... " << "\n";
 	}	
+	return false;
+}
+
+vector<glm::vec2>& lidar::ofxHokuyo::calculateEuclidian(int startAngle, int endAngle)
+{
+	float start = (startAngle >= 45) ?startAngle - 45: 0;
+	float end = (endAngle <= 300) ? endAngle - 45 : 270;
+	if (end > start) {
+		float angle = 0;
+		mScanEuclidean.clear();
+		mScanEuclidean.reserve(end - start * 4 + 10);
+		for (unsigned int i = start * 4; i < end * 4; i++) {
+			angle = i / 4.;
+			float posX = mScanRaw[i] * sin(ofDegToRad(angle - 135.));
+			float posY = mScanRaw[i] * cos(ofDegToRad(angle - 135.));
+			mScanEuclidean.push_back(glm::vec2(posX, posY));
+		}
+		return mScanEuclidean;
+	}
+	else {
+		ofLogError("calculateEuclidian() has bigger startAngle than endAngle");
+	}
+	return mScanEuclidean;
+}
+
+void lidar::ofxHokuyo::drawLines(float scale)
+{
+	for (unsigned int i = 0; i < mScanEuclidean.size(); i++) {
+		ofDrawLine(0, 0, mScanEuclidean[i].x * scale, mScanEuclidean[i].y * scale);
+	}
+}
+
+bool lidar::ofxHokuyo::startSensing()
+{
+	if (mTCPClient.isConnected()) {
+		std::cout << "\nstart sensor...\n";
+
+		// measurement start ("BM");
+		mSendMessage = "BM\n";
+		mTCPClient.send(mSendMessage);
+
+		string message = "";
+		do {
+			message = mTCPClient.receive();
+			std::cout << message << "\n";
+		} while (message.find("BM") != 0);
+
+		std::cout << "\n...started\n";
+
+		return true;
+	}
+	return false;
+}
+
+bool lidar::ofxHokuyo::stopSensing()
+{
+	if (mTCPClient.isConnected()) {
+		std::cout << "\nquit sensor...\n";
+
+		// measurement start ("BM");
+		mSendMessage = "QT\n";
+		mTCPClient.send(mSendMessage);
+
+		string message = "";
+		do {
+			message = mTCPClient.receive();
+			std::cout << message << "\n";
+		} while (message.find("QT") != 0);
+
+		std::cout << "\n...stopped\n";
+
+		return true;
+	}
 	return false;
 }

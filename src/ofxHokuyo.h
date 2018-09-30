@@ -27,7 +27,37 @@ public:
     bool stopSensing();
     
     bool update();
-    void draw();
+
+	/**
+	calculates the euclidian space for each ray reflection, 
+	assuming the sensor in the center and the main axis is y.
+
+	 (min 45) startAngle  -y     endAngle (max 315)
+				    \     |     /
+				     \    |    /
+					  \   |   /
+					   \  |  /
+						\ | /
+						 \|/
+	-x -----------------------------------------> x
+	                      |
+						  |
+						  |
+						  |
+						  |
+						  |
+						  y
+
+	@param startAngle in deg from the negative y axis clockwise (min 45, max 315)
+	@param endAngle in deg from the negative y axis clockwise (min 45, max 315)
+	*/
+	vector<glm::vec2> & calculateEuclidian(int startAngle, int endAngle);
+
+	/**
+	draws the lines of the rays. 
+	NOTICE: call calculateEuclidian once a new frame has been received
+	*/
+    void drawLines(float scale);
     
 protected:
     std::string mIP = "192.168.0.10";
@@ -40,8 +70,9 @@ protected:
 	std::string mSendMessage;
 	std::string mReceiveMessage;
 
-	int mScanRaw[LIDARRANGE];
-	int mScanEuclidean[LIDARRANGE];
+	vector<int> mScanRaw;
+	vector<glm::vec2> mScanEuclidean;
+
 	int mScanTimeStamp;
 
 	int frameCount;
