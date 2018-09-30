@@ -29,7 +29,7 @@ void lidar::ofxHokuyo::setup(std::string ip, int port)
 	mReceiveMessage = "initialValue";
 
 	mScanRaw.resize(LIDARRANGE,0);
-	mScanEuclidean.resize(LIDARRANGE, glm::vec2());
+	mScanEuclidean.resize(LIDARRANGE, glm::vec3());
 
 	mTCPClient.setup(mIP, mPort);
 	mTCPClient.setMessageDelimiter("\n");
@@ -72,34 +72,42 @@ bool lidar::ofxHokuyo::update()
 				//for some strange reason the device is only sending the last few packages once the next GD command was received. 
 				// it turns out that when the GD echo is received, all packages have arrived and parsing can get started...
 
-				if (mReceiveMessage.length() > 0 && frameCount > 0) {
-					//std::cout << "complete message (" << mReceiveMessage.length() << ")" << "\n";
-					//std::cout << "frameCount (" << frameCount << ")" << "\n";
+				if (frameCount > 0) {
+					if (mReceiveMessage.length() == (LIDARRANGE * 3)) {
+						//std::cout << "complete message (" << mReceiveMessage.length() << ")" << "\n";
+						//std::cout << "frameCount (" << frameCount << ")" << "\n";
 
-					char h30 = '0';
+						char h30 = '0';
 
-					unsigned int i;
+						unsigned int i;
 
-					for (i = 0; i < LIDARRANGE; i++) {
-						char val1 = mReceiveMessage[(i * 3)];
-						char val2 = mReceiveMessage[(i * 3) + 1];
-						char val3 = mReceiveMessage[(i * 3) + 2];
+						for (i = 0; i < LIDARRANGE; i++) {
+							char val1 = mReceiveMessage[(i * 3)];
+							char val2 = mReceiveMessage[(i * 3) + 1];
+							char val3 = mReceiveMessage[(i * 3) + 2];
 
-						int val1h = val1 - h30;
-						int val2h = val2 - h30;
-						int val3h = val3 - h30;
+							int val1h = val1 - h30;
+							int val2h = val2 - h30;
+							int val3h = val3 - h30;
 
-						int final = (val1h << 12) + (val2h << 6) + val3h;
+							int final = (val1h << 12) + (val2h << 6) + val3h;
 
-						mScanRaw[i] = final;
+							mScanRaw[i] = final;
+						}
+						//....
+
+						mReceiveMessage = "";
+						frameCount = 0;
+
+						return true;
 					}
-					//....
-
-					mReceiveMessage = "";
-					frameCount = 0;
-
-					return true;
+					else {
+						mReceiveMessage = "";
+						frameCount = 0;
+						return false;
+					}
 				}
+
 			}
 			else if (message.find("00P") == 0) {
 				// toss this
@@ -155,34 +163,49 @@ bool lidar::ofxHokuyo::update()
 	return false;
 }
 
-vector<glm::vec2>& lidar::ofxHokuyo::calculateEuclidian(int startAngle, int endAngle)
+vector<glm::vec3>& lidar::ofxHokuyo::getEuclidian()
+{
+	return mScanEuclidean;
+}
+
+bool lidar::ofxHokuyo::calculateEuclidian(int startAngle, int endAngle, int angleOffset, bool mirror)
 {
 	float start = (startAngle >= 45) ?startAngle - 45: 0;
 	float end = (endAngle <= 300) ? endAngle - 45 : 270;
 	if (end > start) {
 		float angle = 0;
-		mScanEuclidean.clear();
-		mScanEuclidean.reserve(end - start * 4 + 10);
-		for (unsigned int i = start * 4; i < end * 4; i++) {
+		for (unsigned int i = 0; i < mScanEuclidean.size(); i++) {
 			angle = i / 4.;
-			float posX = mScanRaw[i] * sin(ofDegToRad(angle - 135.));
-			float posY = mScanRaw[i] * cos(ofDegToRad(angle - 135.));
-			mScanEuclidean.push_back(glm::vec2(posX, posY));
+			if (start < angle && angle < end) {
+				float posX = mScanRaw[i] * sin(ofDegToRad(angle - 135. + angleOffset));
+				float posY = mScanRaw[i] * cos(ofDegToRad(angle - 135. + angleOffset));
+				mScanEuclidean[i] = glm::vec3((mirror) ? -posX : posX, posY, mScanRaw[i]);
+			}
+			else {
+				mScanEuclidean[i] = glm::vec3(0, 0, mScanRaw[i]);
+			}
 		}
-		return mScanEuclidean;
+		return true;
 	}
 	else {
 		ofLogError("calculateEuclidian() has bigger startAngle than endAngle");
 	}
-	return mScanEuclidean;
+	return false;
 }
 
-void lidar::ofxHokuyo::drawLines(float scale)
+void lidar::ofxHokuyo::drawRays()
 {
+	ofSetColor(255, 255, 255);
 	for (unsigned int i = 0; i < mScanEuclidean.size(); i++) {
-		ofDrawLine(0, 0, mScanEuclidean[i].x * scale, mScanEuclidean[i].y * scale);
+		ofDrawLine(0, 0, mScanEuclidean[i].x , mScanEuclidean[i].y);
 	}
+	ofSetColor(0, 255, 0);
+	ofDrawLine(-5000, 0, 5000, 0);
+	ofSetColor(0, 0, 255);
+	ofDrawLine(0, -5000, 0, 5000);
+
 }
+
 
 bool lidar::ofxHokuyo::startSensing()
 {

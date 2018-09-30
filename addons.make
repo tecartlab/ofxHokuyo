@@ -1,3 +1,4 @@
+ofxGuiExtended
 ofxNetwork
 ofxOpenCv
 ofxOsc

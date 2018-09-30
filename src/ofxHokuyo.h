@@ -29,18 +29,29 @@ public:
     bool update();
 
 	/**
-	calculates the euclidian space for each ray reflection, 
+	NOTICE: call calculateEuclidian once a new frame has been received
+			before you get the updated Euclidian vector
+
+	@returns a vector with all the rays, where each ray is a vec3 where
+		x -> posX
+		y -> posX
+		z -> distance
+	*/
+	vector<glm::vec3> & getEuclidian();
+
+	/**
+	calculate the euclidian space point for each ray reflection,
 	assuming the sensor in the center and the main axis is y.
 
 	 (min 45) startAngle  -y     endAngle (max 315)
-				    \     |     /
-				     \    |    /
+					\     |     /
+					 \    |    /
 					  \   |   /
 					   \  |  /
 						\ | /
 						 \|/
 	-x -----------------------------------------> x
-	                      |
+						  |
 						  |
 						  |
 						  |
@@ -50,14 +61,16 @@ public:
 
 	@param startAngle in deg from the negative y axis clockwise (min 45, max 315)
 	@param endAngle in deg from the negative y axis clockwise (min 45, max 315)
+	@param angleOffset in deg from the negative y axis clockwise
+	@param mirror mirrors the result on the y axis.
 	*/
-	vector<glm::vec2> & calculateEuclidian(int startAngle, int endAngle);
+	bool calculateEuclidian(int startAngle, int endAngle, int angleOffset, bool mirror);
 
 	/**
 	draws the lines of the rays. 
 	NOTICE: call calculateEuclidian once a new frame has been received
 	*/
-    void drawLines(float scale);
+    void drawRays();
     
 protected:
     std::string mIP = "192.168.0.10";
@@ -71,7 +84,7 @@ protected:
 	std::string mReceiveMessage;
 
 	vector<int> mScanRaw;
-	vector<glm::vec2> mScanEuclidean;
+	vector<glm::vec3> mScanEuclidean;
 
 	int mScanTimeStamp;
 

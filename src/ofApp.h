@@ -4,8 +4,15 @@
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 #include "ofxHokuyo.h"
+#include "Sensor.h"
 
 #define LIDARRANGE 1081
+
+#define N_CAMERAS 5
+
+#define VIEWGRID_WIDTH  132
+#define MENU_WIDTH      1000
+#define VIEWPORT_HEIGHT 480
 
 class ofApp : public ofBaseApp{
 
@@ -27,13 +34,26 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
 protected:
- 
+	void ofApp::createHelp();
+	string help;
+
+	void ofApp::setupViewports();
+	ofRectangle viewMain;
+	ofRectangle viewGrid[N_CAMERAS];
+
+	ofEasyCam mainCam;
+	ofCamera previewCams[N_CAMERAS];
+
 	lidar::ofxHokuyo lidarOne;
 
-    bool mShowGraph;
+	sensor::SensorField sensorOne;
+
+	int iMainCamera;
+
+    bool mShowGraph, mShowHelp;
 
     float lidarScale;
     
-    float upperBorder, lowerBorder, leftBorder, rightBorder;
+	ofxGui gui;
 
 };
