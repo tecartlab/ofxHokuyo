@@ -78,6 +78,8 @@ void ofApp::draw(){
 		case 0:
 			lidarOne.drawRays();
 			sensorOne.drawField();
+			sensorOne.drawEvents();
+			sensorOne.drawEventLabels();
 			break;
 		}
 
@@ -89,6 +91,8 @@ void ofApp::draw(){
 	if (mShowHelp) {
 		ofDrawBitmapString(help, 20, VIEWPORT_HEIGHT + 20);
 	}
+
+	ofDrawBitmapString("fps: " + ofToString(ofGetFrameRate()), ofGetWidth() - 200, 10);
 
 }
 
