@@ -32,20 +32,17 @@ public:
 protected:
     std::string mIP = "192.168.0.10";
     int mPort = 10940;
-    std::string mReceiveMessage;
  
 	int mScanStartAngle;
     int mScanEndAngle;
     
-    int mScanTimeStamp;
-    std::vector<float> mScanValues;
-  
 	ofxTCPClient mTCPClient;
 	std::string mSendMessage;
 	std::string mReceiveMessage;
 
-	int lidarRaw[LIDARRANGE];
-	int lidarEuclidean[LIDARRANGE];
+	int mScanRaw[LIDARRANGE];
+	int mScanEuclidean[LIDARRANGE];
+	int mScanTimeStamp;
 
 	int frameCount;
 

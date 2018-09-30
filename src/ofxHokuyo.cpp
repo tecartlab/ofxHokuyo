@@ -121,7 +121,7 @@ bool lidar::ofxHokuyo::update()
 
 						int final = (val1h << 12) + (val2h << 6) + val3h;
 
-						lidarRaw[i] = final;
+						mScanRaw[i] = final;
 					}
 					//....
 
