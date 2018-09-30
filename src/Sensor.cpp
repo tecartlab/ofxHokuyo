@@ -28,7 +28,7 @@ bool sensor::Event::isSame(glm::vec2 pos)
 
 void sensor::Event::update(glm::vec2 pos, float smoothing)
 {
-	mCenter = pos;
+	mCenter = pos * (1.0 - smoothing) + mCenter * smoothing;
 	mLifeCycles++;
 	mCountDown = mBreathSize;
 }

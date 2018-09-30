@@ -13,4 +13,10 @@
 		<LeftLimit__mm_>-434</LeftLimit__mm_>
 		<RightLimit__mm_>1304</RightLimit__mm_>
 	</SensorField>
+	<Sensitivity>
+		<Search_size>217</Search_size>
+		<Ray_Gap>5</Ray_Gap>
+		<Cycles_to_death>25</Cycles_to_death>
+		<Smoothing>0.907609</Smoothing>
+	</Sensitivity>
 </sensorOne>
