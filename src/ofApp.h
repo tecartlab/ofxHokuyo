@@ -34,10 +34,10 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
 protected:
-	void ofApp::createHelp();
+	void createHelp();
 	string help;
 
-	void ofApp::setupViewports();
+	void setupViewports();
 	ofRectangle viewMain;
 	ofRectangle viewGrid[N_CAMERAS];
 

@@ -58,7 +58,7 @@ namespace sensor
 		ofTrueTypeFont myfont;
 
 		bool updateListener();
-		string sensor::SensorField::getOscMsgAsString(ofxOscMessage m);
+		string getOscMsgAsString(ofxOscMessage m);
 
 		ofxOscSender broadcaster;
 		ofxOscReceiver listener;
