@@ -5,39 +5,51 @@
 #define _Lidar_h_
 
 #include <iostream>
+#include "ofMain.h"
 #include "ofxNetwork.h"
 #include "ofThread.h"
 
-namespace dab
-{
+#define LIDARMAX "1080"
+#define LIDARRANGE 1081
 
+namespace lidar
+{
     class ofxHokuyo : public ofThread
 {
+
 public:
     ofxHokuyo();
     ~ofxHokuyo();
     
-    void setup();
-    void startSensing();
-    void stopSensing();
+    void setup(std::string ip, int port);
+
+    bool startSensing();
+    bool stopSensing();
     
-    void update();
+    bool update();
     void draw();
     
 protected:
     std::string mIP = "192.168.0.10";
     int mPort = 10940;
-    std::string mSendString;
-    std::string mReceiveString;
     std::string mReceiveMessage;
-    int mScanStartAngle;
+ 
+	int mScanStartAngle;
     int mScanEndAngle;
     
     int mScanTimeStamp;
     std::vector<float> mScanValues;
-    bool mComIdle;
-    int mComMinIdleDuration = 1000; // usec
-        
+  
+	ofxTCPClient mTCPClient;
+	std::string mSendMessage;
+	std::string mReceiveMessage;
+
+	int lidarRaw[LIDARRANGE];
+	int lidarEuclidean[LIDARRANGE];
+
+	int frameCount;
+
+	float lidarScale;
 };
     
 };

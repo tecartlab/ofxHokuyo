@@ -124,6 +124,10 @@ void ofApp::update()
         while (message.length() > 0);
   
 		if (mReceiveMessage.length() > 0) {
+			// we call for the next frame once we received the first batch of data.
+			// BE AWARE: At this point not all data of the last frame has been received,
+			//           only after receiving the echo of the following call can we be
+			//           sure all the data has been received
 			std::cout << "send GD..." << "\n";
 
 			//Distance acquisition ("GD")
