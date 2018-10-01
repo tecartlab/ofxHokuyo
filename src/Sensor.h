@@ -9,12 +9,12 @@ namespace sensor
 	class Event
 	{
 	public:
-		Event(int ID, glm::vec2 pos, int size, int lifeSpan);
+		Event(int ID, glm::vec2 pos, int size, int generationSize, int lifeSpan);
 		~Event();
 
 		void prepare();
 		bool isSame(glm::vec2 pos);
-		void update(glm::vec2 pos, float smoothing);
+		void update(glm::vec2 pos, int size, float smoothPos, float smoothSize);
 		bool cleanup();
 		float isDying();
 		int getID();
@@ -36,6 +36,7 @@ namespace sensor
 		glm::vec2 mCenter;
 		glm::vec2 mLastCenter;
 		int mSize;
+		int mGenerationSize;
 	};
 
 	class SensorField
@@ -46,6 +47,9 @@ namespace sensor
 
 		void setup(ofxGui &gui, string name);
 		bool update(std::vector<glm::vec3> data);
+		void broadcastEvents(ofxOscSender sender);
+		void broadcastBox(ofxOscSender sender);
+
 		void drawField();
 		void drawEvents();
 		void drawEventLabels();
@@ -57,22 +61,13 @@ namespace sensor
 	protected:
 		ofTrueTypeFont myfont;
 
-		bool updateListener();
-		string getOscMsgAsString(ofxOscMessage m);
-
-		ofxOscSender broadcaster;
-		ofxOscReceiver listener;
-
 		vector<Event> events;
 
-		ofxGuiGroup *broadcastGroup;
-		ofxGuiGroup *listenerGroup;
+		ofxGuiGroup *IDGroup;
 		ofxGuiGroup *fieldGroup;
 		ofxGuiGroup *sensitivityGroup;
 
-		ofParameter<string> mBroadcastIP;
-		ofParameter<int> mBroadcastPort;
-		ofParameter<int> mListeningPort;
+		ofParameter<int> fieldID;
 
 		ofParameter<int> limitUp;
 		ofParameter<int> limitDown;
@@ -82,7 +77,8 @@ namespace sensor
 		ofParameter<int> eventSize;
 		ofParameter<int> eventRayGap;
 		ofParameter<int> eventBreathSize;
-		ofParameter<float> smoothing;
+		ofParameter<float> smoothingPos;
+		ofParameter<float> smoothingSize;
 
 	};
 }

@@ -3,16 +3,53 @@
 //--------------------------------------------------------------
 void ofApp::setup()
 {
+	/***************************************************/
+	// GUI
+	/***************************************************/
+
+	mBroadcastIP.set("Broadcast IP", "127.0.0.1");
+	mBroadcastPort.set("Broadcast Port", 11111, 11110, 11119);
+	mListeningPort.set("Listening Port", 11121, 11120, 11129);
+
+	panel = gui.addPanel();
+
+	panel->loadTheme("theme/theme_light.json");
+	panel->setName("Lidar server");
+
+	broadcastGroup = panel->addGroup("Broadcast");
+	broadcastGroup->add<ofxGuiTextField>(mBroadcastIP);
+	broadcastGroup->add<ofxGuiIntInputField>(mBroadcastPort);
+
+	listenerGroup = panel->addGroup("Listener");
+	listenerGroup->add<ofxGuiIntInputField>(mListeningPort);
+
+	panel->loadFromFile("server.xml");
+
+	/***************************************************/
+	// OSC
+	/***************************************************/
+
+	broadcaster.setup(mBroadcastIP.get(), mBroadcastPort.get());
+	listener.setup(mListeningPort.get());
+
     lidarScale = 0.1;
     
 	ofSetVerticalSync(true);
 	ofSetFrameRate(60);
 	mShowGraph = true;
-    
+ 
+	/***************************************************/
+	// Lidar
+	/***************************************************/
+
 	lidarOne.setup("192.168.0.11", 10940);
 
 	lidarOne.startSensing();    
-  
+
+	/***************************************************/
+	// SensorField
+	/***************************************************/
+
 	sensorOne.setup(gui, "sensorOne");
 
 	setupViewports();
@@ -22,9 +59,9 @@ void ofApp::setup()
 void ofApp::setupViewports() {
 	//call here whenever we resize the window
 
-	sensorOne.panel->setWidth(MENU_WIDTH / 5);
+	sensorOne.panel->setWidth(MENU_WIDTH / 6);
 
-	sensorOne.panel->setPosition(ofGetWidth() - MENU_WIDTH / 5 * 5, 20);
+	sensorOne.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 6, 20);
 	//ofLog(OF_LOG_NOTICE, "ofGetWidth()" + ofToString(ofGetWidth()));
 
 	//--
@@ -55,10 +92,15 @@ void ofApp::update()
 {
 	if (lidarOne.update()) {
 		if (lidarOne.calculateEuclidian(90, 270, 0, true)) {
-			sensorOne.update(lidarOne.getEuclidian());
+			if (sensorOne.update(lidarOne.getEuclidian())) {
+				sensorOne.broadcastEvents(broadcaster);
+			}
 		}
 		// whatever you wanna do if a new frame has arrived....
 	}
+
+	// listen to messages and respond to them
+	updateListener();
 }
 
 //--------------------------------------------------------------
@@ -94,6 +136,44 @@ void ofApp::draw(){
 
 	ofDrawBitmapString("fps: " + ofToString(ofGetFrameRate()), ofGetWidth() - 200, 10);
 
+}
+
+bool ofApp::updateListener()
+{
+	while (listener.hasWaitingMessages()) {
+		// get the next message
+		ofxOscMessage m;
+		listener.getNextMessage(m);
+		//Log received message for easier debugging of participants' messages:
+		ofLog(OF_LOG_NOTICE, "Server recvd msg " + getOscMsgAsString(m) + " from " + m.getRemoteIp());
+
+		// check the address of the incoming message
+		if (m.getAddress() == "/refresh") {
+			//Identify host of incoming msg
+			sensorOne.broadcastBox(broadcaster);
+			ofLogVerbose("Sensor received /refresh message");
+		}
+		else if (m.getAddress() == "/ping") {
+			ofxOscMessage sensorbox;
+			sensorbox.setAddress("/ping");
+			sensorbox.addIntArg(1);
+
+			broadcaster.sendMessage(sensorbox);
+			ofLogVerbose("Sensor received /ping message");
+		}
+		// handle getting random OSC messages here
+		else {
+			ofLogWarning("Server got weird message: " + m.getAddress());
+		}
+	}
+	return false;
+}
+void ofApp::exit()
+{
+	broadcaster.clear();
+	listener.stop();
+	lidarOne.stopSensing();
+	lidarOne.exit();
 }
 
 void ofApp::createHelp() {
@@ -258,4 +338,29 @@ void ofApp::gotMessage(ofMessage msg){
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo dragInfo){ 
 
+}
+
+string ofApp::getOscMsgAsString(ofxOscMessage m) {
+	string msg_string;
+	msg_string = m.getAddress();
+	msg_string += ":";
+	for (int i = 0; i < m.getNumArgs(); i++) {
+		// get the argument type
+		msg_string += " " + m.getArgTypeName(i);
+		msg_string += ":";
+		// display the argument - make sure we get the right type
+		if (m.getArgType(i) == OFXOSC_TYPE_INT32) {
+			msg_string += ofToString(m.getArgAsInt32(i));
+		}
+		else if (m.getArgType(i) == OFXOSC_TYPE_FLOAT) {
+			msg_string += ofToString(m.getArgAsFloat(i));
+		}
+		else if (m.getArgType(i) == OFXOSC_TYPE_STRING) {
+			msg_string += m.getArgAsString(i);
+		}
+		else {
+			msg_string += "unknown";
+		}
+	}
+	return msg_string;
 }

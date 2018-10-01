@@ -28,6 +28,8 @@ public:
     
     bool update();
 
+	void exit();
+
 	/**
 	NOTICE: call calculateEuclidian once a new frame has been received
 			before you get the updated Euclidian vector

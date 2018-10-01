@@ -1,12 +1,13 @@
 #include "Sensor.h"
 
 
-sensor::Event::Event(int ID, glm::vec2 pos, int size, int lifeSpan)
+sensor::Event::Event(int ID, glm::vec2 pos, int size, int generationSize, int lifeSpan)
 {
 	mID = ID;
 	mCenter = pos;
 	mLastCenter = pos;
 	mSize = size;
+	mGenerationSize = generationSize;
 	mBreathSize = lifeSpan;
 	mCountDown = mBreathSize;
 	mLifeCycles = 0;
@@ -23,12 +24,13 @@ void sensor::Event::prepare()
 
 bool sensor::Event::isSame(glm::vec2 pos)
 {
-	return (glm::distance(pos, mCenter) <= mSize)?true: false;
+	return (glm::distance(pos, mCenter) <= mGenerationSize)?true: false;
 }
 
-void sensor::Event::update(glm::vec2 pos, float smoothing)
+void sensor::Event::update(glm::vec2 pos, int size, float smoothPos, float smoothSize)
 {
-	mCenter = pos * (1.0 - smoothing) + mCenter * smoothing;
+	mCenter = pos * (1.0 - smoothPos) + mCenter * smoothPos;
+	mSize = size * (1.0 - smoothSize) + mSize * smoothSize;;
 	mLifeCycles++;
 	mCountDown = mBreathSize;
 }
@@ -40,7 +42,7 @@ bool sensor::Event::cleanup()
 
 float sensor::Event::isDying()
 {
-	return mCountDown / mBreathSize;
+	return (float)mCountDown / (float)mBreathSize;
 }
 
 int sensor::Event::getID()
@@ -70,9 +72,7 @@ void sensor::Event::draw()
 
 sensor::SensorField::SensorField()
 {
-	mBroadcastIP.set("Broadcast IP", "127.0.0.1");
-	mBroadcastPort.set("Broadcast Port", 11111, 11110, 11119);
-	mListeningPort.set("Listening Port", 11121, 11120, 11129);
+	fieldID.set("sensorFieldID", 0, 0, 10);
 
 	limitUp.set("UpperLimit [mm]", 500, 0, 4000);
 	limitDown.set("LowerLimit [mm]", 2500, 0, 4000);
@@ -82,13 +82,12 @@ sensor::SensorField::SensorField()
 	eventSize.set("Search size", 100, 0, 1000);
 	eventRayGap.set("Ray Gap", 5, 0, 20);
 	eventBreathSize.set("Cycles to death", 10, 0, 100);
-	smoothing.set("Smoothing", 0.5, 0.0, 1.0);
+	smoothingPos.set("Smooth Pos", 0.5, 0.0, 1.0);
+	smoothingSize.set("Smooth Size", 0.5, 0.0, 1.0);
 }
 
 sensor::SensorField::~SensorField()
 {
-	broadcaster.clear();
-	listener.stop();
 }
 
 void sensor::SensorField::setup(ofxGui &gui, string name)
@@ -98,12 +97,7 @@ void sensor::SensorField::setup(ofxGui &gui, string name)
 	panel->loadTheme("theme/theme_light.json");
 	panel->setName(name);
 
-	broadcastGroup = panel->addGroup("Broadcast");
-	broadcastGroup->add<ofxGuiTextField>(mBroadcastIP);
-	broadcastGroup->add<ofxGuiIntInputField>(mBroadcastPort);
-
-	listenerGroup = panel->addGroup("Listener");
-	listenerGroup->add<ofxGuiIntInputField>(mListeningPort);
+	panel->add<ofxGuiIntInputField>(fieldID);
 
 	fieldGroup = panel->addGroup("SensorField");
 	fieldGroup->add(limitUp);
@@ -115,21 +109,17 @@ void sensor::SensorField::setup(ofxGui &gui, string name)
 	sensitivityGroup->add(eventSize);
 	sensitivityGroup->add(eventRayGap);
 	sensitivityGroup->add(eventBreathSize);
-	sensitivityGroup->add(smoothing);
+	sensitivityGroup->add(smoothingPos);
+	sensitivityGroup->add(smoothingSize);
 
 	panel->loadFromFile(name + ".xml");
 
-	broadcaster.setup(mBroadcastIP.get(), mBroadcastPort.get());
-	listener.setup(mListeningPort.get());
 
 	myfont.load("verdana.ttf", 100);
 }
 
 bool sensor::SensorField::update(std::vector<glm::vec3> data)
 {
-	// lets first check if some messages for us have arrived...
-	updateListener();
-
 	int minID = 0;
 
 	// we prepare all the previous events
@@ -141,6 +131,8 @@ bool sensor::SensorField::update(std::vector<glm::vec3> data)
 	int rayGap = 0;
 	int counter = 0;
 	glm::vec2 hit = glm::vec2();
+	glm::vec2 firsthit = glm::vec2();
+	glm::vec2 lastthit = glm::vec2();
 	// now do our job
 	for (int i = 0; i < data.size(); i++) {
 		// first check if the point is inside the sensorfield:	
@@ -148,17 +140,25 @@ bool sensor::SensorField::update(std::vector<glm::vec3> data)
 			limitLeft.get() < data[i].x && data[i].x < limitRight.get()) {
 
 				//std::cout << "got event... " << "\n";
-				counter++;
-				hit += glm::vec2(data[i].x, data[i].y);
+			if (counter == 0) {
+				firsthit = glm::vec2(data[i].x, data[i].y);
+			}
+			else {
+				lastthit = glm::vec2(data[i].x, data[i].y);
+			}
+			counter++;
+			hit += glm::vec2(data[i].x, data[i].y);
 		}
 		else {
 			if (counter > 0 && rayGap++ > eventRayGap.get()) {
 				hit /= counter;
 				//std::cout << "got event at " << hit.x << " "  << hit.y << " size: " << counter << "\n";
 
+				int size = glm::distance(firsthit, lastthit);
+
 				for (int e = 0; e < events.size(); e++) {
 					if (events[e].isSame(hit)) {
-						events[e].update(hit, smoothing.get());
+						events[e].update(hit, size, smoothingPos.get(), smoothingSize.get());
 						counter = 0;
 						hit = glm::vec2();
 						break;
@@ -166,7 +166,7 @@ bool sensor::SensorField::update(std::vector<glm::vec3> data)
 				}
 				if (counter > 0) {
 					// no previous event was found, so create a new one.
-					events.push_back(Event(minID, hit, eventSize.get(), eventBreathSize.get()));
+					events.push_back(Event(minID, hit, size, eventSize.get(), eventBreathSize.get()));
 				}
 				counter = 0;
 				rayGap = 0;
@@ -182,22 +182,38 @@ bool sensor::SensorField::update(std::vector<glm::vec3> data)
 		}
 	}
 
-	if (events.size() > 0) {
-		for (int e = 0; e < events.size(); e++) {
-			if (events[e].isDying() == 1.0) {
-				ofxOscMessage sensorbox;
-				sensorbox.setAddress("/event");
-				sensorbox.addIntArg(events[e].getID());
-				sensorbox.addIntArg(events[e].getLifeCycles());
-				sensorbox.addIntArg(events[e].getCenter().x);
-				sensorbox.addIntArg(events[e].getCenter().y);
+	return (events.size() > 0) ? true : false;
+}
 
-				broadcaster.sendMessage(sensorbox);
-			}
+void sensor::SensorField::broadcastEvents(ofxOscSender sender)
+{
+	for (int e = 0; e < events.size(); e++) {
+		if (events[e].isDying() == 1.0) {
+			ofxOscMessage sensorbox;
+			sensorbox.setAddress("/event");
+			sensorbox.addIntArg(fieldID.get());
+			sensorbox.addIntArg(events[e].getID());
+			sensorbox.addIntArg(events[e].getLifeCycles());
+			sensorbox.addIntArg(events[e].getCenter().x);
+			sensorbox.addIntArg(events[e].getCenter().y);
+			sensorbox.addIntArg(events[e].getSize());
+
+			sender.sendMessage(sensorbox);
 		}
 	}
+}
 
-	return false;
+void sensor::SensorField::broadcastBox(ofxOscSender sender)
+{
+	ofxOscMessage sensorbox;
+	sensorbox.setAddress("/sensorbox");
+	sensorbox.addIntArg(fieldID.get());
+	sensorbox.addIntArg(limitUp.get());
+	sensorbox.addIntArg(limitDown.get());
+	sensorbox.addIntArg(limitLeft.get());
+	sensorbox.addIntArg(limitRight.get());
+
+	sender.sendMessage(sensorbox);
 }
 
 void sensor::SensorField::drawField()
@@ -211,6 +227,7 @@ void sensor::SensorField::drawField()
 
 void sensor::SensorField::drawEvents()
 {
+	ofNoFill();
 	for (int e = 0; e < events.size(); e++) {
 		ofSetColor(255. * events[e].isDying(), 0, 0);
 		events[e].draw();
@@ -228,68 +245,5 @@ void sensor::SensorField::drawEventLabels()
 void sensor::SensorField::save()
 {
 	panel->saveToFile(panel->getName() + ".xml");
-}
-
-bool sensor::SensorField::updateListener()
-{
-	while (listener.hasWaitingMessages()) {
-		// get the next message
-		ofxOscMessage m;
-		listener.getNextMessage(m);
-		//Log received message for easier debugging of participants' messages:
-		ofLog(OF_LOG_NOTICE, "Server recvd msg " + getOscMsgAsString(m) + " from " + m.getRemoteIp());
-
-		// check the address of the incoming message
-		if (m.getAddress() == "/refresh") {
-			//Identify host of incoming msg
-			ofxOscMessage sensorbox;
-			sensorbox.setAddress("/sensorbox");
-			sensorbox.addIntArg(limitUp.get());
-			sensorbox.addIntArg(limitDown.get());
-			sensorbox.addIntArg(limitLeft.get());
-			sensorbox.addIntArg(limitRight.get());
-
-			broadcaster.sendMessage(sensorbox);
-			ofLogVerbose("Sensor received /refresh message");
-		}
-		else if (m.getAddress() == "/ping") {
-			ofxOscMessage sensorbox;
-			sensorbox.setAddress("/ping");
-			sensorbox.addIntArg(1);
-
-			broadcaster.sendMessage(sensorbox);
-			ofLogVerbose("Sensor received /ping message");
-		}
-		// handle getting random OSC messages here
-		else {
-			ofLogWarning("Server got weird message: " + m.getAddress());
-		}
-	}
-	return false;
-}
-
-string sensor::SensorField::getOscMsgAsString(ofxOscMessage m) {
-	string msg_string;
-	msg_string = m.getAddress();
-	msg_string += ":";
-	for (int i = 0; i < m.getNumArgs(); i++) {
-		// get the argument type
-		msg_string += " " + m.getArgTypeName(i);
-		msg_string += ":";
-		// display the argument - make sure we get the right type
-		if (m.getArgType(i) == OFXOSC_TYPE_INT32) {
-			msg_string += ofToString(m.getArgAsInt32(i));
-		}
-		else if (m.getArgType(i) == OFXOSC_TYPE_FLOAT) {
-			msg_string += ofToString(m.getArgAsFloat(i));
-		}
-		else if (m.getArgType(i) == OFXOSC_TYPE_STRING) {
-			msg_string += m.getArgAsString(i);
-		}
-		else {
-			msg_string += "unknown";
-		}
-	}
-	return msg_string;
 }
 

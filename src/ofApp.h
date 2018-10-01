@@ -10,8 +10,8 @@
 
 #define N_CAMERAS 5
 
-#define VIEWGRID_WIDTH  132
-#define MENU_WIDTH      1000
+#define VIEWGRID_WIDTH  200
+#define MENU_WIDTH      1200
 #define VIEWPORT_HEIGHT 480
 
 class ofApp : public ofBaseApp{
@@ -20,6 +20,7 @@ class ofApp : public ofBaseApp{
 		void setup();
 		void update();
 		void draw();
+		void exit();
 
 		void keyPressed(int key);
 		void keyReleased(int key);
@@ -34,7 +35,10 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
 protected:
+	bool updateListener();
 	void createHelp();
+	string getOscMsgAsString(ofxOscMessage m);
+
 	string help;
 
 	void setupViewports();
@@ -54,6 +58,17 @@ protected:
 
     float lidarScale;
     
+	ofxOscSender broadcaster;
+	ofxOscReceiver listener;
+
 	ofxGui gui;
 
+	ofxGuiPanel *panel;
+
+	ofxGuiGroup *broadcastGroup;
+	ofxGuiGroup *listenerGroup;
+
+	ofParameter<string> mBroadcastIP;
+	ofParameter<int> mBroadcastPort;
+	ofParameter<int> mListeningPort;
 };

@@ -163,6 +163,11 @@ bool lidar::ofxHokuyo::update()
 	return false;
 }
 
+void lidar::ofxHokuyo::exit()
+{
+	mTCPClient.close();
+}
+
 vector<glm::vec3>& lidar::ofxHokuyo::getEuclidian()
 {
 	return mScanEuclidean;
@@ -237,12 +242,6 @@ bool lidar::ofxHokuyo::stopSensing()
 		// measurement start ("BM");
 		mSendMessage = "QT\n";
 		mTCPClient.send(mSendMessage);
-
-		string message = "";
-		do {
-			message = mTCPClient.receive();
-			std::cout << message << "\n";
-		} while (message.find("QT") != 0);
 
 		std::cout << "\n...stopped\n";
 
