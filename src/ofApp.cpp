@@ -7,21 +7,25 @@ void ofApp::setup()
 	// GUI
 	/***************************************************/
 
-	mBroadcastIP.set("Broadcast IP", "127.0.0.1");
-	mBroadcastPort.set("Broadcast Port", 11111, 11110, 11119);
-	mListeningPort.set("Listening Port", 11121, 11120, 11129);
-
 	panel = gui.addPanel();
 
 	panel->loadTheme("theme/theme_light.json");
 	panel->setName("Lidar server");
 
 	broadcastGroup = panel->addGroup("Broadcast");
-	broadcastGroup->add<ofxGuiTextField>(mBroadcastIP);
-	broadcastGroup->add<ofxGuiIntInputField>(mBroadcastPort);
+	broadcastGroup->add<ofxGuiTextField>(mBroadcastIP.set("Broadcast IP", "127.0.0.1"));
+	broadcastGroup->add<ofxGuiIntInputField>(mBroadcastPort.set("Broadcast Port", 11111, 11110, 11119));
 
 	listenerGroup = panel->addGroup("Listener");
-	listenerGroup->add<ofxGuiIntInputField>(mListeningPort);
+	listenerGroup->add<ofxGuiIntInputField>(mListeningPort.set("Listening Port", 11121, 11120, 11129));
+
+	lidarGroup = panel->addGroup("Lidar");
+	lidarGroup->add(mLidarMirror0.set("Mirror 0", false));
+	lidarGroup->add(mLidarMirror1.set("Mirror 1", false));
+	lidarGroup->add(mLidarMirror2.set("Mirror 2", false));
+	lidarGroup->add(mLidarMirror3.set("Mirror 3", false));
+	lidarGroup->add(mLidarMirror4.set("Mirror 4", false));
+
 
 	panel->loadFromFile("server.xml");
 
@@ -42,15 +46,28 @@ void ofApp::setup()
 	// Lidar
 	/***************************************************/
 
-	lidarOne.setup("192.168.0.11", 10940);
+	lidar10.setup("192.168.0.10", 10940);
+	lidar11.setup("192.168.0.11", 10940);
+	lidar12.setup("192.168.0.12", 10940);
+	lidar13.setup("192.168.0.13", 10940);
+	lidar14.setup("192.168.0.14", 10940);
 
-	lidarOne.startSensing();    
+	lidar10.startSensing();
+	lidar11.startSensing();
+	lidar12.startSensing();
+	lidar13.startSensing();
+	lidar14.startSensing();
 
 	/***************************************************/
 	// SensorField
 	/***************************************************/
 
-	sensorOne.setup(gui, "sensorOne");
+	sensor0.setup(gui, "sensor_0");
+	sensor1.setup(gui, "sensor_1");
+	sensor2.setup(gui, "sensor_2");
+	sensor3.setup(gui, "sensor_3");
+	sensor4.setup(gui, "sensor_4");
+	sensor5.setup(gui, "sensor_5");
 
 	setupViewports();
 }
@@ -59,10 +76,19 @@ void ofApp::setup()
 void ofApp::setupViewports() {
 	//call here whenever we resize the window
 
-	sensorOne.panel->setWidth(MENU_WIDTH / 6);
+	sensor0.panel->setWidth(MENU_WIDTH / 6);
+	sensor1.panel->setWidth(MENU_WIDTH / 6);
+	sensor2.panel->setWidth(MENU_WIDTH / 6);
+	sensor3.panel->setWidth(MENU_WIDTH / 6);
+	sensor4.panel->setWidth(MENU_WIDTH / 6);
+	sensor5.panel->setWidth(MENU_WIDTH / 6);
 
-	sensorOne.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 6, 20);
-	//ofLog(OF_LOG_NOTICE, "ofGetWidth()" + ofToString(ofGetWidth()));
+	sensor0.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 6, 20);
+	sensor1.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 5, 20);
+	sensor2.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 4, 20);
+	sensor3.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 3, 20);
+	sensor4.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 2, 20);
+	sensor5.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 1, 20);
 
 	//--
 	// Define viewports
@@ -90,13 +116,47 @@ void ofApp::setupViewports() {
 //--------------------------------------------------------------
 void ofApp::update()
 {
-	if (lidarOne.update()) {
-		if (lidarOne.calculateEuclidian(90, 270, 0, true)) {
-			if (sensorOne.update(lidarOne.getEuclidian())) {
-				sensorOne.broadcastEvents(broadcaster);
+	if (lidar10.update()) {
+		if (lidar10.calculateEuclidian(90, 270, 0, mLidarMirror0.get())) {
+			if (sensor0.update(lidar10.getEuclidian())) {
+				sensor0.broadcastEvents(broadcaster, lidar10.getTimeStamp());
 			}
 		}
-		// whatever you wanna do if a new frame has arrived....
+	}
+
+	if (lidar11.update()) {
+		if (lidar11.calculateEuclidian(90, 270, 0, mLidarMirror1.get())) {
+			if (sensor1.update(lidar11.getEuclidian())) {
+				sensor1.broadcastEvents(broadcaster, lidar11.getTimeStamp());
+			}
+		}
+	}
+
+	if (lidar12.update()) {
+		if (lidar12.calculateEuclidian(90, 270, 0, mLidarMirror2.get())) {
+			if (sensor2.update(lidar12.getEuclidian())) {
+				sensor2.broadcastEvents(broadcaster, lidar12.getTimeStamp());
+			}
+		}
+	}
+
+	if (lidar13.update()) {
+		if (lidar13.calculateEuclidian(90, 270, 0, mLidarMirror3.get())) {
+			if (sensor3.update(lidar13.getEuclidian())) {
+				sensor3.broadcastEvents(broadcaster, lidar13.getTimeStamp());
+			}
+		}
+	}
+
+	if (lidar14.update()) {
+		if (lidar14.calculateEuclidian(90, 270, 0, mLidarMirror4.get())) {
+			if (sensor4.update(lidar14.getEuclidian())) {
+				sensor4.broadcastEvents(broadcaster, lidar14.getTimeStamp());
+			}
+			if (sensor5.update(lidar14.getEuclidian())) {
+				sensor5.broadcastEvents(broadcaster, lidar14.getTimeStamp());
+			}
+		}
 	}
 
 	// listen to messages and respond to them
@@ -112,16 +172,46 @@ void ofApp::draw(){
 		mainCam.begin(viewMain);
 		glPushMatrix();
 
-		glTranslatef(0, 200, 0);
-		glRotatef(180, 1, 0, 0);
+		//glTranslatef(0, 200, 0);
+		//glRotatef(180, 0, 0, 1);
 		glScalef(lidarScale, lidarScale, lidarScale);
 
 		switch (iMainCamera) {
 		case 0:
-			lidarOne.drawRays();
-			sensorOne.drawField();
-			sensorOne.drawEvents();
-			sensorOne.drawEventLabels();
+			lidar10.drawRays();
+			sensor0.drawField();
+			sensor0.drawEvents();
+			sensor0.drawEventLabels();
+			break;
+		case 1:
+			lidar11.drawRays();
+			sensor1.drawField();
+			sensor1.drawEvents();
+			sensor1.drawEventLabels();
+			break;
+		case 2:
+			lidar12.drawRays();
+			sensor2.drawField();
+			sensor2.drawEvents();
+			sensor2.drawEventLabels();
+			break;
+		case 3:
+			lidar13.drawRays();
+			sensor3.drawField();
+			sensor3.drawEvents();
+			sensor3.drawEventLabels();
+			break;
+		case 4:
+			lidar14.drawRays();
+			sensor4.drawField();
+			sensor4.drawEvents();
+			sensor4.drawEventLabels();
+			break;
+		case 5:
+			lidar14.drawRays();
+			sensor5.drawField();
+			sensor5.drawEvents();
+			sensor5.drawEventLabels();
 			break;
 		}
 
@@ -150,7 +240,12 @@ bool ofApp::updateListener()
 		// check the address of the incoming message
 		if (m.getAddress() == "/refresh") {
 			//Identify host of incoming msg
-			sensorOne.broadcastBox(broadcaster);
+			sensor0.broadcastBox(broadcaster);
+			sensor1.broadcastBox(broadcaster);
+			sensor2.broadcastBox(broadcaster);
+			sensor3.broadcastBox(broadcaster);
+			sensor4.broadcastBox(broadcaster);
+			sensor5.broadcastBox(broadcaster);
 			ofLogVerbose("Sensor received /refresh message");
 		}
 		else if (m.getAddress() == "/ping") {
@@ -172,8 +267,16 @@ void ofApp::exit()
 {
 	broadcaster.clear();
 	listener.stop();
-	lidarOne.stopSensing();
-	lidarOne.exit();
+	lidar10.stopSensing();
+	lidar11.stopSensing();
+	lidar12.stopSensing();
+	lidar13.stopSensing();
+	lidar14.stopSensing();
+	lidar10.exit();
+	lidar11.exit();
+	lidar12.exit();
+	lidar13.exit();
+	lidar14.exit();
 }
 
 void ofApp::createHelp() {
@@ -209,7 +312,13 @@ void ofApp::keyPressed(int key)
 		break;
 
 	case 's':
-		sensorOne.save();
+		sensor0.save();
+		sensor1.save();
+		sensor2.save();
+		sensor3.save();
+		sensor4.save();
+		sensor5.save();
+		panel->saveToFile("server.xml");
 		break;
 
 	case 'l':

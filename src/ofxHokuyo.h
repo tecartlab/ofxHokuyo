@@ -45,7 +45,7 @@ public:
 	calculate the euclidian space point for each ray reflection,
 	assuming the sensor in the center and the main axis is y.
 
-	 (min 45) startAngle  -y     endAngle (max 315)
+	 (min 45) startAngle  y     endAngle (max 315)
 					\     |     /
 					 \    |    /
 					  \   |   /
@@ -59,7 +59,7 @@ public:
 						  |
 						  |
 						  |
-						  y
+						  -y
 
 	@param startAngle in deg from the negative y axis clockwise (min 45, max 315)
 	@param endAngle in deg from the negative y axis clockwise (min 45, max 315)
@@ -73,6 +73,8 @@ public:
 	NOTICE: call calculateEuclidian once a new frame has been received
 	*/
     void drawRays();
+
+	int getTimeStamp();
     
 protected:
     std::string mIP = "192.168.0.10";

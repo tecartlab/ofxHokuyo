@@ -12,24 +12,25 @@ namespace sensor
 		Event(int ID, glm::vec2 pos, int size, int generationSize, int lifeSpan);
 		~Event();
 
-		void prepare();
-		bool isSame(glm::vec2 pos);
-		void update(glm::vec2 pos, int size, float smoothPos, float smoothSize);
-		bool cleanup();
-		float isDying();
-		int getID();
+		void	prepare();
+		bool	isSame(glm::vec2 pos);
+		void	update(glm::vec2 pos, int size, float smoothPos, float smoothSize);
+		bool	cleanup();
+		bool	isDying();
+		int		getID();
 		glm::vec2 getCenter();
-		int getSize();
-		int getLifeCycles();
+		int		getSize();
+		int		getElapsedMillis();
 
-		void draw();
-		void send();
+		void	 draw();
 
 	protected:
+
 		int mID;
 
 		int mCountDown;
 		int mBreathSize;
+		bool mIsDying;
 
 		int mLifeCycles;
 
@@ -47,7 +48,7 @@ namespace sensor
 
 		void setup(ofxGui &gui, string name);
 		bool update(std::vector<glm::vec3> data);
-		void broadcastEvents(ofxOscSender sender);
+		void broadcastEvents(ofxOscSender sender, int frameNumber);
 		void broadcastBox(ofxOscSender sender);
 
 		void drawField();

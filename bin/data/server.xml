@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<Lidar_server>
+	<Broadcast>
+		<Broadcast_IP>127.0.0.1</Broadcast_IP>
+		<Broadcast_Port>11111</Broadcast_Port>
+	</Broadcast>
+	<Listener>
+		<Listening_Port>11121</Listening_Port>
+	</Listener>
+</Lidar_server>

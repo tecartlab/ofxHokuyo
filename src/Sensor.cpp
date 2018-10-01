@@ -10,7 +10,8 @@ sensor::Event::Event(int ID, glm::vec2 pos, int size, int generationSize, int li
 	mGenerationSize = generationSize;
 	mBreathSize = lifeSpan;
 	mCountDown = mBreathSize;
-	mLifeCycles = 0;
+	mLifeCycles = ofGetElapsedTimeMillis();
+	mIsDying = false;
 }
 
 sensor::Event::~Event()
@@ -24,25 +25,27 @@ void sensor::Event::prepare()
 
 bool sensor::Event::isSame(glm::vec2 pos)
 {
-	return (glm::distance(pos, mCenter) <= mGenerationSize)?true: false;
+	return (!mIsDying && glm::distance(pos, mCenter) <= mGenerationSize)?true: false;
 }
 
 void sensor::Event::update(glm::vec2 pos, int size, float smoothPos, float smoothSize)
 {
 	mCenter = pos * (1.0 - smoothPos) + mCenter * smoothPos;
 	mSize = size * (1.0 - smoothSize) + mSize * smoothSize;;
-	mLifeCycles++;
 	mCountDown = mBreathSize;
 }
 
 bool sensor::Event::cleanup()
 {
+	if (mCountDown == 0) {
+		mIsDying = true;
+	}
 	return  (mCountDown < 0)?true: false;
 }
 
-float sensor::Event::isDying()
+bool sensor::Event::isDying()
 {
-	return (float)mCountDown / (float)mBreathSize;
+	return mIsDying;
 }
 
 int sensor::Event::getID()
@@ -60,9 +63,9 @@ int sensor::Event::getSize()
 	return mSize;
 }
 
-int sensor::Event::getLifeCycles()
+int sensor::Event::getElapsedMillis()
 {
-	return mLifeCycles;
+	return ofGetElapsedTimeMillis() - mLifeCycles;
 }
 
 void sensor::Event::draw()
@@ -74,8 +77,8 @@ sensor::SensorField::SensorField()
 {
 	fieldID.set("sensorFieldID", 0, 0, 10);
 
-	limitUp.set("UpperLimit [mm]", 500, 0, 4000);
-	limitDown.set("LowerLimit [mm]", 2500, 0, 4000);
+	limitUp.set("UpperLimit [mm]", -500, 0, -4000);
+	limitDown.set("LowerLimit [mm]", -2500, 0, -4000);
 	limitLeft.set("LeftLimit [mm]", -2000, -8000, 8000);
 	limitRight.set("RightLimit [mm]", 2000, -8000, 8000);
 
@@ -136,7 +139,7 @@ bool sensor::SensorField::update(std::vector<glm::vec3> data)
 	// now do our job
 	for (int i = 0; i < data.size(); i++) {
 		// first check if the point is inside the sensorfield:	
-		if (limitUp.get() < data[i].y && data[i].y < limitDown.get() &&
+		if (limitDown.get() < data[i].y && data[i].y < limitUp.get() &&
 			limitLeft.get() < data[i].x && data[i].x < limitRight.get()) {
 
 				//std::cout << "got event... " << "\n";
@@ -185,33 +188,53 @@ bool sensor::SensorField::update(std::vector<glm::vec3> data)
 	return (events.size() > 0) ? true : false;
 }
 
-void sensor::SensorField::broadcastEvents(ofxOscSender sender)
+void sensor::SensorField::broadcastEvents(ofxOscSender sender, int frameNumber)
 {
+	ofxOscMessage sensorbox;
+	sensorbox.setAddress("/sensorfield/frame/start");
+	sensorbox.addIntArg(fieldID.get());
+	sensorbox.addIntArg(frameNumber);
+	sender.sendMessage(sensorbox);
+
 	for (int e = 0; e < events.size(); e++) {
-		if (events[e].isDying() == 1.0) {
-			ofxOscMessage sensorbox;
-			sensorbox.setAddress("/event");
+		if (!events[e].isDying()) {
+			sensorbox.clear();
+			sensorbox.setAddress("/sensorfield/event");
 			sensorbox.addIntArg(fieldID.get());
 			sensorbox.addIntArg(events[e].getID());
-			sensorbox.addIntArg(events[e].getLifeCycles());
+			sensorbox.addIntArg(events[e].getElapsedMillis());
 			sensorbox.addIntArg(events[e].getCenter().x);
 			sensorbox.addIntArg(events[e].getCenter().y);
 			sensorbox.addIntArg(events[e].getSize());
 
 			sender.sendMessage(sensorbox);
 		}
+		else {
+			sensorbox.clear();
+			sensorbox.setAddress("/sensorfield/event/end");
+			sensorbox.addIntArg(fieldID.get());
+			sensorbox.addIntArg(events[e].getID());
+			sensorbox.addIntArg(events[e].getElapsedMillis());
+
+			sender.sendMessage(sensorbox);
+		}
 	}
+	sensorbox.clear();
+	sensorbox.setAddress("/sensorfield/frame/end");
+	sensorbox.addIntArg(fieldID.get());
+	sensorbox.addIntArg(frameNumber);
+	sender.sendMessage(sensorbox);
 }
 
 void sensor::SensorField::broadcastBox(ofxOscSender sender)
 {
 	ofxOscMessage sensorbox;
-	sensorbox.setAddress("/sensorbox");
+	sensorbox.setAddress("/sensorfield/box");
 	sensorbox.addIntArg(fieldID.get());
-	sensorbox.addIntArg(limitUp.get());
-	sensorbox.addIntArg(limitDown.get());
 	sensorbox.addIntArg(limitLeft.get());
 	sensorbox.addIntArg(limitRight.get());
+	sensorbox.addIntArg(limitUp.get());
+	sensorbox.addIntArg(limitDown.get());
 
 	sender.sendMessage(sensorbox);
 }

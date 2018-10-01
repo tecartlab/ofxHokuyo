@@ -48,9 +48,26 @@ protected:
 	ofEasyCam mainCam;
 	ofCamera previewCams[N_CAMERAS];
 
-	lidar::ofxHokuyo lidarOne;
+	/***************************************************/
+	// Lidar
+	/***************************************************/
 
-	sensor::SensorField sensorOne;
+	lidar::ofxHokuyo lidar10;
+	lidar::ofxHokuyo lidar11;
+	lidar::ofxHokuyo lidar12;
+	lidar::ofxHokuyo lidar13;
+	lidar::ofxHokuyo lidar14;
+
+	/***************************************************/
+	// SensorField
+	/***************************************************/
+
+	sensor::SensorField sensor0;
+	sensor::SensorField sensor1;
+	sensor::SensorField sensor2;
+	sensor::SensorField sensor3;
+	sensor::SensorField sensor4;
+	sensor::SensorField sensor5;
 
 	int iMainCamera;
 
@@ -58,8 +75,16 @@ protected:
 
     float lidarScale;
     
+	/***************************************************/
+	// OSC
+	/***************************************************/
+
 	ofxOscSender broadcaster;
 	ofxOscReceiver listener;
+
+	/***************************************************/
+	// GUI
+	/***************************************************/
 
 	ofxGui gui;
 
@@ -67,8 +92,16 @@ protected:
 
 	ofxGuiGroup *broadcastGroup;
 	ofxGuiGroup *listenerGroup;
+	ofxGuiGroup *lidarGroup;
 
 	ofParameter<string> mBroadcastIP;
 	ofParameter<int> mBroadcastPort;
 	ofParameter<int> mListeningPort;
+
+	ofParameter<bool> mLidarMirror0;
+	ofParameter<bool> mLidarMirror1;
+	ofParameter<bool> mLidarMirror2;
+	ofParameter<bool> mLidarMirror3;
+	ofParameter<bool> mLidarMirror4;
+
 };

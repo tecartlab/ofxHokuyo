@@ -182,8 +182,8 @@ bool lidar::ofxHokuyo::calculateEuclidian(int startAngle, int endAngle, int angl
 		for (unsigned int i = 0; i < mScanEuclidean.size(); i++) {
 			angle = i / 4.;
 			if (start < angle && angle < end) {
-				float posX = mScanRaw[i] * sin(ofDegToRad(angle - 135. + angleOffset));
-				float posY = mScanRaw[i] * cos(ofDegToRad(angle - 135. + angleOffset));
+				float posX = mScanRaw[i] * sin(ofDegToRad(angle + 45. + angleOffset));
+				float posY = mScanRaw[i] * cos(ofDegToRad(angle + 45. + angleOffset));
 				mScanEuclidean[i] = glm::vec3((mirror) ? -posX : posX, posY, mScanRaw[i]);
 			}
 			else {
@@ -204,11 +204,16 @@ void lidar::ofxHokuyo::drawRays()
 	for (unsigned int i = 0; i < mScanEuclidean.size(); i++) {
 		ofDrawLine(0, 0, mScanEuclidean[i].x , mScanEuclidean[i].y);
 	}
+	ofSetColor(255, 0, 0);
+	ofDrawLine(0, 0, 5000, 0);
 	ofSetColor(0, 255, 0);
-	ofDrawLine(-5000, 0, 5000, 0);
-	ofSetColor(0, 0, 255);
-	ofDrawLine(0, -5000, 0, 5000);
+	ofDrawLine(0, 0, 0, 5000);
 
+}
+
+int lidar::ofxHokuyo::getTimeStamp()
+{
+	return mScanTimeStamp;
 }
 
 
