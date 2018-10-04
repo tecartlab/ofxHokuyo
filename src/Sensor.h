@@ -51,6 +51,7 @@ namespace sensor
 		void broadcastEvents(ofxOscSender sender, int frameNumber);
 		void broadcastBox(ofxOscSender sender);
 
+		void drawGui();
 		void drawField();
 		void drawEvents();
 		void drawEventLabels();

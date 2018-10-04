@@ -7,4 +7,16 @@
 	<Listener>
 		<Listening_Port>11121</Listening_Port>
 	</Listener>
+	<Lidar>
+		<Mirror_0>1</Mirror_0>
+		<Mirror_1>1</Mirror_1>
+		<Mirror_2>1</Mirror_2>
+		<Mirror_3>1</Mirror_3>
+		<Mirror_4>1</Mirror_4>
+		<AngleOffset_0>0</AngleOffset_0>
+		<AngleOffset_1>0</AngleOffset_1>
+		<AngleOffset_2>-0.108696</AngleOffset_2>
+		<AngleOffset_3>1.2766</AngleOffset_3>
+		<AngleOffset_4>0</AngleOffset_4>
+	</Lidar>
 </Lidar_server>

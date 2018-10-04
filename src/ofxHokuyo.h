@@ -42,21 +42,27 @@ public:
 	vector<glm::vec3> & getEuclidian();
 
 	/**
-	calculate the euclidian space point for each ray reflection,
-	assuming the sensor in the center and the main axis is y.
-
+	Get the distance at the specified angle 
 	 (min 45) startAngle  y     endAngle (max 315)
-					\     |     /
-					 \    |    /
-					  \   |   /
-					   \  |  /
 						\ | /
 						 \|/
 	-x -----------------------------------------> x
 						  |
 						  |
-						  |
-						  |
+						  -y
+	@param angle (from y axis clockwise)
+	@return distance in mm
+	*/
+	int getRawDistance(float angle);
+
+	/**
+	calculate the euclidian space point for each ray reflection,
+	assuming the sensor in the center and the main axis is y.
+
+	 (min 45) startAngle  y     endAngle (max 315)
+						\ | /
+						 \|/
+	-x -----------------------------------------> x
 						  |
 						  |
 						  -y
@@ -66,7 +72,7 @@ public:
 	@param angleOffset in deg from the negative y axis clockwise
 	@param mirror mirrors the result on the y axis.
 	*/
-	bool calculateEuclidian(int startAngle, int endAngle, int angleOffset, bool mirror);
+	bool calculateEuclidian(int startAngle, int endAngle, float angleOffset, bool mirror);
 
 	/**
 	draws the lines of the rays. 

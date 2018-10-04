@@ -2,10 +2,10 @@
 <sensor_4>
 	<sensorFieldID>4</sensorFieldID>
 	<SensorField>
-		<UpperLimit__mm_>500</UpperLimit__mm_>
-		<LowerLimit__mm_>1086</LowerLimit__mm_>
-		<LeftLimit__mm_>956</LeftLimit__mm_>
-		<RightLimit__mm_>2000</RightLimit__mm_>
+		<UpperLimit__mm_>-1000</UpperLimit__mm_>
+		<LowerLimit__mm_>-3521</LowerLimit__mm_>
+		<LeftLimit__mm_>-3913</LeftLimit__mm_>
+		<RightLimit__mm_>-173</RightLimit__mm_>
 	</SensorField>
 	<Sensitivity>
 		<Search_size>100</Search_size>

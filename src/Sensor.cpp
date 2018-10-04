@@ -123,6 +123,8 @@ void sensor::SensorField::setup(ofxGui &gui, string name)
 
 bool sensor::SensorField::update(std::vector<glm::vec3> data)
 {
+	panel->setHidden(true);
+
 	int minID = 0;
 
 	// we prepare all the previous events
@@ -237,6 +239,11 @@ void sensor::SensorField::broadcastBox(ofxOscSender sender)
 	sensorbox.addIntArg(limitDown.get());
 
 	sender.sendMessage(sensorbox);
+}
+
+void sensor::SensorField::drawGui()
+{
+	panel->setHidden(false);
 }
 
 void sensor::SensorField::drawField()

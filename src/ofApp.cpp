@@ -3,6 +3,11 @@
 //--------------------------------------------------------------
 void ofApp::setup()
 {
+	lidarScale = 0.1;
+
+	ofSetVerticalSync(true);
+	ofSetFrameRate(60);
+
 	/***************************************************/
 	// GUI
 	/***************************************************/
@@ -21,10 +26,15 @@ void ofApp::setup()
 
 	lidarGroup = panel->addGroup("Lidar");
 	lidarGroup->add(mLidarMirror0.set("Mirror 0", false));
+	lidarGroup->add(mLidarAngleOffset0.set("AngleOffset 0", 0, -5, 5));
 	lidarGroup->add(mLidarMirror1.set("Mirror 1", false));
+	lidarGroup->add(mLidarAngleOffset1.set("AngleOffset 1", 0, -5, 5));
 	lidarGroup->add(mLidarMirror2.set("Mirror 2", false));
+	lidarGroup->add(mLidarAngleOffset2.set("AngleOffset 2", 0, -5, 5));
 	lidarGroup->add(mLidarMirror3.set("Mirror 3", false));
+	lidarGroup->add(mLidarAngleOffset3.set("AngleOffset 3", 0, -5, 5));
 	lidarGroup->add(mLidarMirror4.set("Mirror 4", false));
+	lidarGroup->add(mLidarAngleOffset4.set("AngleOffset 4", 0, -5, 5));
 
 
 	panel->loadFromFile("server.xml");
@@ -36,21 +46,15 @@ void ofApp::setup()
 	broadcaster.setup(mBroadcastIP.get(), mBroadcastPort.get());
 	listener.setup(mListeningPort.get());
 
-    lidarScale = 0.1;
-    
-	ofSetVerticalSync(true);
-	ofSetFrameRate(60);
-	mShowGraph = true;
- 
-	/***************************************************/
+ 	/***************************************************/
 	// Lidar
 	/***************************************************/
 
-	lidar10.setup("192.168.0.10", 10940);
-	lidar11.setup("192.168.0.11", 10940);
-	lidar12.setup("192.168.0.12", 10940);
-	lidar13.setup("192.168.0.13", 10940);
-	lidar14.setup("192.168.0.14", 10940);
+	lidar10.setup("192.168.0.13", 10940);
+	lidar11.setup("192.168.0.14", 10940);
+	lidar12.setup("192.168.0.11", 10940);
+	lidar13.setup("192.168.0.12", 10940);
+	lidar14.setup("192.168.0.10", 10940);
 
 	lidar10.startSensing();
 	lidar11.startSensing();
@@ -70,25 +74,29 @@ void ofApp::setup()
 	sensor5.setup(gui, "sensor_5");
 
 	setupViewports();
+
+	mShowGraph = false;
+	mShowHelp = true;
+	createHelp();
 }
 
 //--------------------------------------------------------------
 void ofApp::setupViewports() {
 	//call here whenever we resize the window
 
-	sensor0.panel->setWidth(MENU_WIDTH / 6);
-	sensor1.panel->setWidth(MENU_WIDTH / 6);
-	sensor2.panel->setWidth(MENU_WIDTH / 6);
-	sensor3.panel->setWidth(MENU_WIDTH / 6);
-	sensor4.panel->setWidth(MENU_WIDTH / 6);
-	sensor5.panel->setWidth(MENU_WIDTH / 6);
+	sensor0.panel->setWidth(MENU_WIDTH);
+	sensor1.panel->setWidth(MENU_WIDTH);
+	sensor2.panel->setWidth(MENU_WIDTH);
+	sensor3.panel->setWidth(MENU_WIDTH);
+	sensor4.panel->setWidth(MENU_WIDTH);
+	sensor5.panel->setWidth(MENU_WIDTH);
 
-	sensor0.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 6, 20);
-	sensor1.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 5, 20);
-	sensor2.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 4, 20);
-	sensor3.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 3, 20);
-	sensor4.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 2, 20);
-	sensor5.panel->setPosition(ofGetWidth() - MENU_WIDTH / 6 * 1, 20);
+	sensor0.panel->setPosition(ofGetWidth() - MENU_WIDTH, 20);
+	sensor1.panel->setPosition(ofGetWidth() - MENU_WIDTH, 20);
+	sensor2.panel->setPosition(ofGetWidth() - MENU_WIDTH, 20);
+	sensor3.panel->setPosition(ofGetWidth() - MENU_WIDTH, 20);
+	sensor4.panel->setPosition(ofGetWidth() - MENU_WIDTH, 20);
+	sensor5.panel->setPosition(ofGetWidth() - MENU_WIDTH, 20);
 
 	//--
 	// Define viewports
@@ -117,45 +125,50 @@ void ofApp::setupViewports() {
 void ofApp::update()
 {
 	if (lidar10.update()) {
-		if (lidar10.calculateEuclidian(90, 270, 0, mLidarMirror0.get())) {
+		if (lidar10.calculateEuclidian(90, 270, mLidarAngleOffset0.get(), mLidarMirror0.get())) {
 			if (sensor0.update(lidar10.getEuclidian())) {
 				sensor0.broadcastEvents(broadcaster, lidar10.getTimeStamp());
 			}
+			distance0 = lidar10.getRawDistance(180. - mLidarAngleOffset0.get());
 		}
 	}
 
 	if (lidar11.update()) {
-		if (lidar11.calculateEuclidian(90, 270, 0, mLidarMirror1.get())) {
+		if (lidar11.calculateEuclidian(90, 270, mLidarAngleOffset1.get(), mLidarMirror1.get())) {
 			if (sensor1.update(lidar11.getEuclidian())) {
 				sensor1.broadcastEvents(broadcaster, lidar11.getTimeStamp());
 			}
+			distance1 = lidar11.getRawDistance(180. - mLidarAngleOffset1.get());
 		}
 	}
 
 	if (lidar12.update()) {
-		if (lidar12.calculateEuclidian(90, 270, 0, mLidarMirror2.get())) {
+		if (lidar12.calculateEuclidian(90, 270, mLidarAngleOffset2.get(), mLidarMirror2.get())) {
 			if (sensor2.update(lidar12.getEuclidian())) {
 				sensor2.broadcastEvents(broadcaster, lidar12.getTimeStamp());
 			}
+			distance2 = lidar12.getRawDistance(180. - mLidarAngleOffset2.get());
 		}
 	}
 
 	if (lidar13.update()) {
-		if (lidar13.calculateEuclidian(90, 270, 0, mLidarMirror3.get())) {
+		if (lidar13.calculateEuclidian(90, 270, mLidarAngleOffset3.get(), mLidarMirror3.get())) {
 			if (sensor3.update(lidar13.getEuclidian())) {
 				sensor3.broadcastEvents(broadcaster, lidar13.getTimeStamp());
 			}
+			distance3 = lidar13.getRawDistance(180. - mLidarAngleOffset3.get());
 		}
 	}
 
 	if (lidar14.update()) {
-		if (lidar14.calculateEuclidian(90, 270, 0, mLidarMirror4.get())) {
+		if (lidar14.calculateEuclidian(90, 270, mLidarAngleOffset4.get(), mLidarMirror4.get())) {
 			if (sensor4.update(lidar14.getEuclidian())) {
 				sensor4.broadcastEvents(broadcaster, lidar14.getTimeStamp());
 			}
 			if (sensor5.update(lidar14.getEuclidian())) {
 				sensor5.broadcastEvents(broadcaster, lidar14.getTimeStamp());
 			}
+			distance4 = lidar14.getRawDistance(180. - mLidarAngleOffset4.get());
 		}
 	}
 
@@ -179,36 +192,42 @@ void ofApp::draw(){
 		switch (iMainCamera) {
 		case 0:
 			lidar10.drawRays();
+			sensor0.drawGui();
 			sensor0.drawField();
 			sensor0.drawEvents();
 			sensor0.drawEventLabels();
 			break;
 		case 1:
 			lidar11.drawRays();
+			sensor1.drawGui();
 			sensor1.drawField();
 			sensor1.drawEvents();
 			sensor1.drawEventLabels();
 			break;
 		case 2:
 			lidar12.drawRays();
+			sensor2.drawGui();
 			sensor2.drawField();
 			sensor2.drawEvents();
 			sensor2.drawEventLabels();
 			break;
 		case 3:
 			lidar13.drawRays();
+			sensor3.drawGui();
 			sensor3.drawField();
 			sensor3.drawEvents();
 			sensor3.drawEventLabels();
 			break;
 		case 4:
 			lidar14.drawRays();
+			sensor4.drawGui();
 			sensor4.drawField();
 			sensor4.drawEvents();
 			sensor4.drawEventLabels();
 			break;
 		case 5:
 			lidar14.drawRays();
+			sensor5.drawGui();
 			sensor5.drawField();
 			sensor5.drawEvents();
 			sensor5.drawEventLabels();
@@ -218,10 +237,16 @@ void ofApp::draw(){
 		glPopMatrix();
 		mainCam.end();
 
+		panel->setHidden(false);
     }
+	else {
+		panel->setHidden(true);
+	}
+
+	ofColor(0, 0, 0, 1);
 
 	if (mShowHelp) {
-		ofDrawBitmapString(help, 20, VIEWPORT_HEIGHT + 20);
+		ofDrawBitmapString(help, VIEWGRID_WIDTH + 20, VIEWPORT_HEIGHT + 20);
 	}
 
 	ofDrawBitmapString("fps: " + ofToString(ofGetFrameRate()), ofGetWidth() - 200, 10);
@@ -284,6 +309,12 @@ void ofApp::createHelp() {
 	help += "press s -> to save current settings.\n";
 	help += "press l -> to load last saved settings\n";
 	help += "press 1 - 6 -> to change the viewport\n";
+	help += "\n";
+	help += "Height for lidar0 = " + ofToString(distance0) + "mm \n";
+	help += "Height for lidar1 = " + ofToString(distance1) + "mm \n";
+	help += "Height for lidar2 = " + ofToString(distance2) + "mm \n";
+	help += "Height for lidar3 = " + ofToString(distance3) + "mm \n";
+	help += "Height for lidar4 = " + ofToString(distance4) + "mm \n";
 }
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)

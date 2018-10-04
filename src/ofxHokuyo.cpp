@@ -173,10 +173,16 @@ vector<glm::vec3>& lidar::ofxHokuyo::getEuclidian()
 	return mScanEuclidean;
 }
 
-bool lidar::ofxHokuyo::calculateEuclidian(int startAngle, int endAngle, int angleOffset, bool mirror)
+int lidar::ofxHokuyo::getRawDistance(float angle)
 {
-	float start = (startAngle >= 45) ?startAngle - 45: 0;
-	float end = (endAngle <= 300) ? endAngle - 45 : 270;
+	int index = (angle - 45.) / 0.25;
+	return mScanRaw[( 0 <= index && index < mScanRaw.size())? index: 0];
+}
+
+bool lidar::ofxHokuyo::calculateEuclidian(int startAngle, int endAngle, float angleOffset, bool mirror)
+{
+	float start = (startAngle - angleOffset >= 45) ?startAngle - angleOffset - 45: 0;
+	float end = (endAngle - angleOffset <= 315) ? endAngle - angleOffset - 45 : 270;
 	if (end > start) {
 		float angle = 0;
 		for (unsigned int i = 0; i < mScanEuclidean.size(); i++) {

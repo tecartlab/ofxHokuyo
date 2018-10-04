@@ -11,7 +11,7 @@
 #define N_CAMERAS 5
 
 #define VIEWGRID_WIDTH  200
-#define MENU_WIDTH      1200
+#define MENU_WIDTH      200
 #define VIEWPORT_HEIGHT 480
 
 class ofApp : public ofBaseApp{
@@ -74,6 +74,8 @@ protected:
     bool mShowGraph, mShowHelp;
 
     float lidarScale;
+
+	int distance0, distance1, distance2, distance3, distance4;
     
 	/***************************************************/
 	// OSC
@@ -98,10 +100,17 @@ protected:
 	ofParameter<int> mBroadcastPort;
 	ofParameter<int> mListeningPort;
 
+	ofParameter<float> mLidarAngleOffset0;
+	ofParameter<float> mLidarAngleOffset1;
+	ofParameter<float> mLidarAngleOffset2;
+	ofParameter<float> mLidarAngleOffset3;
+	ofParameter<float> mLidarAngleOffset4;
+
 	ofParameter<bool> mLidarMirror0;
 	ofParameter<bool> mLidarMirror1;
 	ofParameter<bool> mLidarMirror2;
 	ofParameter<bool> mLidarMirror3;
 	ofParameter<bool> mLidarMirror4;
+
 
 };
