@@ -3,15 +3,15 @@
 	<sensorFieldID>4</sensorFieldID>
 	<SensorField>
 		<UpperLimit__mm_>-1000</UpperLimit__mm_>
-		<LowerLimit__mm_>-3521</LowerLimit__mm_>
-		<LeftLimit__mm_>-3913</LeftLimit__mm_>
+		<LowerLimit__mm_>-3304</LowerLimit__mm_>
+		<LeftLimit__mm_>-4173</LeftLimit__mm_>
 		<RightLimit__mm_>-173</RightLimit__mm_>
 	</SensorField>
 	<Sensitivity>
-		<Search_size>100</Search_size>
+		<Search_size>217</Search_size>
 		<Ray_Gap>5</Ray_Gap>
 		<Cycles_to_death>10</Cycles_to_death>
-		<Smooth_Pos>0.5</Smooth_Pos>
-		<Smooth_Size>0.5</Smooth_Size>
+		<Smooth_Pos>0.847826</Smooth_Pos>
+		<Smooth_Size>0.88587</Smooth_Size>
 	</Sensitivity>
 </sensor_4>
